@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+dist/
+
+# Env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Go
+backend/*.exe
+backend/*.exe~
+backend/*.dll
+backend/*.so
+backend/*.dylib
+backend/*.test
+backend/*.out
+backend/public/*
+!backend/public/.gitkeep
+
+# Rust / Tauri
+desktop/src-tauri/target/
+desktop/src-tauri/binaries/backend*
+desktop/node_modules/
+desktop/dist/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
