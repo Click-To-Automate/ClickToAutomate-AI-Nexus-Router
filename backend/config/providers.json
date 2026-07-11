@@ -1,0 +1,88 @@
+{
+  "providers": [
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "base_url": "https://api.openai.com/v1",
+      "env_key": "OPENAI_API_KEY",
+      "prefixes": ["gpt-", "o1-", "o3-"]
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "base_url": "https://api.anthropic.com/v1",
+      "env_key": "ANTHROPIC_API_KEY",
+      "prefixes": ["claude-"]
+    },
+    {
+      "id": "gemini",
+      "name": "Google Gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "env_key": "GEMINI_API_KEY",
+      "prefixes": ["gemini-"]
+    },
+    {
+      "id": "groq",
+      "name": "Groq",
+      "base_url": "https://api.groq.com/openai/v1",
+      "env_key": "GROQ_API_KEY",
+      "prefixes": ["groq/", "llama3-", "mixtral-"]
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "env_key": "OPENROUTER_API_KEY",
+      "prefixes": ["openrouter/"]
+    },
+    {
+      "id": "together",
+      "name": "Together AI",
+      "base_url": "https://api.together.xyz/v1",
+      "env_key": "TOGETHER_API_KEY",
+      "prefixes": ["together/"]
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama (Local)",
+      "base_url": "http://localhost:11434/v1",
+      "env_key": "",
+      "prefixes": ["ollama/"]
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral (Free Tier)",
+      "base_url": "https://api.mistral.ai/v1",
+      "env_key": "MISTRAL_API_KEY",
+      "prefixes": ["mistral/", "mistral-"]
+    },
+    {
+      "id": "cerebras",
+      "name": "Cerebras",
+      "base_url": "https://api.cerebras.ai/v1",
+      "env_key": "CEREBRAS_API_KEY",
+      "prefixes": ["cerebras/"]
+    },
+    {
+      "id": "github-models",
+      "name": "GitHub Models",
+      "base_url": "https://models.inference.ai.azure.com",
+      "env_key": "GITHUB_TOKEN",
+      "prefixes": ["github/"]
+    },
+    {
+      "id": "sambanova",
+      "name": "SambaNova",
+      "base_url": "https://api.sambanova.ai/v1",
+      "env_key": "SAMBANOVA_API_KEY",
+      "prefixes": ["sambanova/"]
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "base_url": "https://api.deepseek.com/v1",
+      "env_key": "DEEPSEEK_API_KEY",
+      "prefixes": ["deepseek/"]
+    }
+  ]
+}
