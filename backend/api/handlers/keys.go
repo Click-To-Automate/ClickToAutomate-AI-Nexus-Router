@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"ainexusrouter-core/db"
+	"ainexusrouter-core/discovery"
 )
 
 type SetKeyRequest struct {
@@ -101,6 +102,9 @@ func HandleKeys(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
+		// Trigger background discovery so new keys show up in models dropdown immediately
+		go discovery.RunDiscovery()
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

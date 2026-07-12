@@ -9,6 +9,12 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// UsageData represents the telemetry for a single provider
+type UsageData struct {
+	Count       int `json:"count"`
+	TokensSaved int `json:"tokens_saved"`
+}
+
 var DB *sql.DB
 
 func InitDB() error {
@@ -48,6 +54,17 @@ func InitDB() error {
 	CREATE TABLE IF NOT EXISTS usage_stats (
 		provider_id TEXT PRIMARY KEY,
 		request_count INTEGER DEFAULT 0
+	);
+	CREATE TABLE IF NOT EXISTS app_settings (
+		key TEXT PRIMARY KEY,
+		value TEXT NOT NULL
+	);
+	CREATE TABLE IF NOT EXISTS semantic_cache (
+		hash TEXT PRIMARY KEY,
+		prompt TEXT NOT NULL,
+		response TEXT NOT NULL,
+		tokens_saved INTEGER DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
 	
 	_, err = db.Exec(createTableSQL)
@@ -60,6 +77,9 @@ func InitDB() error {
 		INSERT OR IGNORE INTO provider_keys_multi (provider_id, api_key)
 		SELECT provider_id, api_key FROM provider_keys;
 	`)
+
+	// Try migrating usage_stats to include tokens_saved if it doesn't exist
+	_, _ = db.Exec(`ALTER TABLE usage_stats ADD COLUMN tokens_saved INTEGER DEFAULT 0;`)
 
 	DB = db
 	return nil
@@ -109,29 +129,31 @@ func DeleteKey(providerID, apiKey string) error {
 	return err
 }
 
-// IncrementUsage increments the request count for a given provider.
-func IncrementUsage(providerID string) error {
+// IncrementUsage increments the request count and tokens saved for a given provider.
+func IncrementUsage(providerID string, tokensSaved int) error {
 	if DB == nil {
 		return fmt.Errorf("database not initialized")
 	}
 
 	upsertSQL := `
-	INSERT INTO usage_stats (provider_id, request_count) 
-	VALUES (?, 1)
-	ON CONFLICT(provider_id) DO UPDATE SET request_count = request_count + 1;
+	INSERT INTO usage_stats (provider_id, request_count, tokens_saved) 
+	VALUES (?, 1, ?)
+	ON CONFLICT(provider_id) DO UPDATE SET 
+		request_count = request_count + 1,
+		tokens_saved = tokens_saved + ?;
 	`
-	_, err := DB.Exec(upsertSQL, providerID)
+	_, err := DB.Exec(upsertSQL, providerID, tokensSaved, tokensSaved)
 	return err
 }
 
-// GetAllUsage retrieves the request counts for all providers.
-func GetAllUsage() map[string]int {
-	usage := make(map[string]int)
+// GetAllUsage retrieves the request counts and tokens saved for all providers.
+func GetAllUsage() map[string]UsageData {
+	usage := make(map[string]UsageData)
 	if DB == nil {
 		return usage
 	}
 
-	rows, err := DB.Query("SELECT provider_id, request_count FROM usage_stats")
+	rows, err := DB.Query("SELECT provider_id, request_count, COALESCE(tokens_saved, 0) FROM usage_stats")
 	if err != nil {
 		return usage
 	}
@@ -140,9 +162,90 @@ func GetAllUsage() map[string]int {
 	for rows.Next() {
 		var id string
 		var count int
-		if err := rows.Scan(&id, &count); err == nil {
-			usage[id] = count
+		var saved int
+		if err := rows.Scan(&id, &count, &saved); err == nil {
+			usage[id] = UsageData{
+				Count:       count,
+				TokensSaved: saved,
+			}
 		}
 	}
 	return usage
+}
+
+// GetSetting retrieves a setting value by key.
+func GetSetting(key string, defaultValue string) string {
+	if DB == nil {
+		return defaultValue
+	}
+	var value string
+	err := DB.QueryRow("SELECT value FROM app_settings WHERE key = ?", key).Scan(&value)
+	if err != nil {
+		return defaultValue
+	}
+	return value
+}
+
+// SetSetting sets a setting value.
+func SetSetting(key string, value string) error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	_, err := DB.Exec("INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?", key, value, value)
+	return err
+}
+
+// GetCache retrieves a cached response by hash.
+func GetCache(hash string) (string, error) {
+	if DB == nil {
+		return "", fmt.Errorf("database not initialized")
+	}
+	var response string
+	err := DB.QueryRow("SELECT response FROM semantic_cache WHERE hash = ?", hash).Scan(&response)
+	return response, err
+}
+
+// SetCache saves a cached response.
+func SetCache(hash string, prompt string, response string, tokensSaved int) error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	_, err := DB.Exec("INSERT OR IGNORE INTO semantic_cache (hash, prompt, response, tokens_saved) VALUES (?, ?, ?, ?)", hash, prompt, response, tokensSaved)
+	return err
+}
+
+// GetAllCache retrieves all cache entries for the UI.
+func GetAllCache() []map[string]interface{} {
+	var results []map[string]interface{}
+	if DB == nil {
+		return results
+	}
+	rows, err := DB.Query("SELECT hash, prompt, tokens_saved, created_at FROM semantic_cache ORDER BY created_at DESC LIMIT 100")
+	if err != nil {
+		return results
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var hash, prompt, createdAt string
+		var tokensSaved int
+		if err := rows.Scan(&hash, &prompt, &tokensSaved, &createdAt); err == nil {
+			results = append(results, map[string]interface{}{
+				"hash": hash,
+				"prompt": prompt,
+				"tokens_saved": tokensSaved,
+				"created_at": createdAt,
+			})
+		}
+	}
+	return results
+}
+
+// ClearCache clears all cache entries.
+func ClearCache() error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	_, err := DB.Exec("DELETE FROM semantic_cache")
+	return err
 }

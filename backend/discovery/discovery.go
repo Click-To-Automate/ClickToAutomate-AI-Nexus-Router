@@ -7,13 +7,29 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"ainexusrouter-core/config"
 	"ainexusrouter-core/db"
 )
 
+// isChatModel checks if a model name belongs to an audio, embedding, or moderation model
+func isChatModel(id string) bool {
+	lower := strings.ToLower(id)
+	nonChatKeywords := []string{
+		"whisper", "embed", "moderation", "ocr", "tts", "realtime", "prompt-guard",
+	}
+	for _, kw := range nonChatKeywords {
+		if strings.Contains(lower, kw) {
+			return false
+		}
+	}
+	return true
+}
+
 // ProviderModels stores the discovered live models mapped by providerID
 var ProviderModels = make(map[string][]string)
+var Mu sync.RWMutex
 
 // RunDiscovery boots up and polls all configured providers to build the model map
 func RunDiscovery() {
@@ -76,7 +92,9 @@ func RunDiscovery() {
 			for _, m := range data {
 				if modelObj, ok := m.(map[string]interface{}); ok {
 					if id, ok := modelObj["id"].(string); ok {
-						models = append(models, id)
+						if isChatModel(id) {
+							models = append(models, id)
+						}
 					}
 				}
 			}
@@ -87,14 +105,18 @@ func RunDiscovery() {
 					if name, ok := modelObj["name"].(string); ok {
 						// Google prepends "models/" to the name
 						name = strings.TrimPrefix(name, "models/")
-						models = append(models, name)
+						if isChatModel(name) {
+							models = append(models, name)
+						}
 					}
 				}
 			}
 		}
 
 		if len(models) > 0 {
+			Mu.Lock()
 			ProviderModels[p.ID] = models
+			Mu.Unlock()
 			log.Printf("[Discovery] ✅ %s -> Found %d live models", strings.ToUpper(p.ID), len(models))
 		}
 	}
@@ -105,7 +127,10 @@ func RunDiscovery() {
 // GetBestModel finds the first discovered model for a provider that contains the keyword.
 // If the preferred keyword isn't found, it returns the first available model, or a default string.
 func GetBestModel(providerID string, preferredKeyword string, defaultFallback string) string {
+	Mu.RLock()
 	models, ok := ProviderModels[providerID]
+	Mu.RUnlock()
+	
 	if !ok || len(models) == 0 {
 		return defaultFallback // Provider didn't answer discovery, just fallback to hardcoded
 	}

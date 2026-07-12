@@ -4,9 +4,8 @@ import (
 	"strings"
 )
 
-// AnalyzeTask examines the chat messages to determine the optimal routing tier.
-// Returns "simple", "code", or "complex"
-func AnalyzeTask(messages []interface{}) string {
+// AnalyzeComplexity examines the chat messages to determine the mathematical complexity score (0.0 to 1.0)
+func AnalyzeComplexity(messages []interface{}) float64 {
 	var fullTextBuilder strings.Builder
 
 	// Concatenate all user messages to analyze intent
@@ -30,37 +29,44 @@ func AnalyzeTask(messages []interface{}) string {
 	length := len(fullText)
 	approxTokens := length / 4 // 1 token is roughly 4 characters
 
-	// 0. Massive Payload Detection (prevent 413 Payload Too Large on strict limits)
+	// 0. Massive Payload Detection -> Extremely high complexity
 	if approxTokens > 10000 {
-		return "massive"
+		return 0.95
 	}
 
-	// 1. Code Detection
+	score := 0.5 // Baseline complexity
+
+	// 1. Code Detection -> Increases complexity requirement
 	codeKeywords := []string{
 		"```", "function", "def ", "class ", "interface ", 
 		"refactor", "bug", "error:", "compile", "script",
 	}
 	for _, kw := range codeKeywords {
 		if strings.Contains(fullText, kw) {
-			return "code"
+			score += 0.3
+			break
 		}
 	}
 
-	// 2. Complex/Analysis Detection
+	// 2. Complex/Analysis Detection -> Increases complexity requirement
 	complexKeywords := []string{
 		"analyze", "summarize", "explain the difference", 
 		"compare", "architecture", "design", "essay",
 	}
 	for _, kw := range complexKeywords {
 		if strings.Contains(fullText, kw) {
-			return "complex"
+			score += 0.2
+			break
 		}
 	}
 
-	if length > 1000 {
-		return "complex"
+	if length > 2000 {
+		score += 0.1
 	}
 
-	// 3. Default to Simple
-	return "simple"
+	if score > 0.95 {
+		score = 0.95 // Cap maximum complexity requirement slightly below 1.0
+	}
+
+	return score
 }

@@ -2,36 +2,54 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import './Preloader.css';
 
-const TAGLINE = "Websites · Marketing · Automation";
+const TAGLINE = "Smart Routing · Context Compression · Provider Fallback";
 const WORD = "Automate".split("");
 
-// Node Icons
-const LeadCaptureIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M5 12a7 7 0 0 1 7-7v2a5 5 0 0 0-5 5H5z"/><path d="M12 5a7 7 0 0 1 7 7h-2a5 5 0 0 0-5-5V5z"/><circle cx="12" cy="12" r="2"/></svg>
+// Node Icons for AI Nexus Router
+const ClientIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
 );
-const CrmIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>
+const CompressionIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+    <path d="M12 12v9" />
+    <path d="m8 17 4 4 4-4" />
+  </svg>
 );
-const AiIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 15h3M1 9h3M1 15h3"/></svg>
+const RouterIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+    <path d="M18 3h4v4h-4zM2 3h4v4H2zM10 17h4v4h-4zM6 5h12M12 17v-8M6 9v3a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V9" />
+  </svg>
 );
-const EmailIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+const BalancerIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+    <line x1="6" y1="6" x2="6.01" y2="6" strokeWidth={3} />
+    <line x1="6" y1="18" x2="6.01" y2="18" strokeWidth={3} />
+  </svg>
 );
-const PipelineIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+const ShieldIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
 );
-const GrowthIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}><path d="M4.5 16.5c-1.5 1.26-2 2.6-1.5 3 1 .8 2.4.5 3.5-.5L9 16.5H4.5z"/><path d="M12 15 9 16.5 6 13.5 7.5 10.5 12 15z"/><path d="M11 14.5c.3-1.6 1.3-4.5 4.5-7.5s5.9-4.2 7.5-4.5c.3 1.6-.5 4.3-3.7 7.5s-5.9 4.2-7.5 4.5z"/><path d="M13.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/></svg>
+const SparkleIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={16} height={16}>
+    <path d="M12 3c.132 5.863 5.137 10.868 11 11-5.863.132-10.868 5.137-11 11-.132-5.863-5.137-10.868-11-11 5.863-.132 10.868-5.137 11-11z" />
+  </svg>
 );
 
 const NODES = [
-  { id: 1, label: "Lead Capture", x: 120, y: 100, Icon: LeadCaptureIcon, align: "left" },
-  { id: 2, label: "CRM", x: 280, y: 220, Icon: CrmIcon, align: "right" },
-  { id: 3, label: "AI Processing", x: 120, y: 340, Icon: AiIcon, align: "left" },
-  { id: 4, label: "Email Automation", x: 280, y: 460, Icon: EmailIcon, align: "right" },
-  { id: 5, label: "Sales Pipeline", x: 120, y: 580, Icon: PipelineIcon, align: "left" },
-  { id: 6, label: "Business Growth", x: 200, y: 700, Icon: GrowthIcon, align: "center" }
+  { id: 1, label: "Client Request", x: 120, y: 100, Icon: ClientIcon, align: "left" },
+  { id: 2, label: "Context Compression", x: 280, y: 220, Icon: CompressionIcon, align: "right" },
+  { id: 3, label: "Smart Routing", x: 120, y: 340, Icon: RouterIcon, align: "left" },
+  { id: 4, label: "Load Balancing", x: 280, y: 460, Icon: BalancerIcon, align: "right" },
+  { id: 5, label: "Provider Fallback", x: 120, y: 580, Icon: ShieldIcon, align: "left" },
+  { id: 6, label: "LLM Response", x: 200, y: 700, Icon: SparkleIcon, align: "center" }
 ];
 
 const PATHS = [
@@ -306,7 +324,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
 
         <div className="preloader-intro-container">
           <h2 ref={introTaglineRef} className="preloader-intro-tagline">
-            Run your business on autopilot with
+            Power your AI workflows with
           </h2>
         </div>
 

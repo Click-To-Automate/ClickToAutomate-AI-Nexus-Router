@@ -16,7 +16,6 @@ import (
 // HandleProxyRequest proxies the request to the upstream provider
 func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, model string, stream bool) error {
 	var routes []providers.SmartRoute
-	var taskType string = "simple"
 
 	// We unmarshal early to allow intent analysis
 	var payload map[string]interface{}
@@ -28,17 +27,17 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 	if model == "cta-ai-nexus" {
 		// 1. Extract messages array
 		if messages, ok := payload["messages"].([]interface{}); ok {
-			// 2. Classify intent (simple, code, complex, massive)
-			taskType = AnalyzeTask(messages)
-			log.Printf("[Auto-Router] Intent Analyzer classified task as: %s\n", strings.ToUpper(taskType))
-		}
+			// 2. Classify complexity mathematically
+			complexity := AnalyzeComplexity(messages)
+			log.Printf("[Auto-Router] Intent Analyzer classified task complexity as: %f\n", complexity)
 
-		smartRoutes, err := providers.GetSmartRoutes(taskType)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return err
+			smartRoutes, err := providers.GetSmartRoutes(complexity)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return err
+			}
+			routes = smartRoutes
 		}
-		routes = smartRoutes
 	} else {
 		provider, err := providers.GetProviderForModel(model)
 		if err != nil {
@@ -61,6 +60,8 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 		if model == "cta-ai-nexus" {
 			log.Printf("[Auto-Router] Trying Route %d/%d: %s -> %s\n", i+1, len(routes), route.Provider.Name, route.ActualModel)
 		}
+
+		totalSavedTokens := 0
 
 		// Map to correct model
 		payload["model"] = route.ActualModel
@@ -91,6 +92,10 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 										log.Printf("[TOON-Compressor] Detected massive JSON payload (%d chars). Attempting TOON extraction via Groq...", len(chunk.Text))
 										toonText, err := CompressToToon(chunk.Text)
 										if err == nil {
+											saved := (len(chunk.Text) / 4) - (len(toonText) / 4)
+											if saved > 0 {
+												totalSavedTokens += saved
+											}
 											log.Printf("[TOON-Compressor] Success! Shrunk JSON from %d chars to %d chars of TOON!", len(chunk.Text), len(toonText))
 											chunk.Text = toonText // Replace the raw JSON with TOON
 											modified = true
@@ -108,6 +113,7 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 										log.Printf("[Context-Compressor] Cost Win! Text: %d tk vs Vision: %d tk -> Compressing chunk...", textCost, visionCost)
 										pages, err := CompressTextToImage(chunk.Text)
 										if err == nil {
+											totalSavedTokens += (textCost - visionCost)
 											modified = true
 											hasImage = true
 											newContent = append(newContent, map[string]interface{}{
@@ -210,6 +216,10 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 		   isDeadModel || 
 		   isTokenLimit {
 			log.Printf("[Auto-Router] Fallback Triggered! %s returned %d: %s\n", route.Provider.Name, resp.StatusCode, string(bodyBytes))
+			
+			// Add heavy Lagrangian Penalty to force decomposition away from this provider
+			providers.IncrementPenalty(route.Provider.Name)
+
 			lastErr = fmt.Errorf("provider %s returned %d", route.Provider.Name, resp.StatusCode)
 			continue // Try next provider!
 		}
@@ -219,7 +229,7 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 		// Success! Log telemetry to database
-		db.IncrementUsage(route.Provider.Name)
+		db.IncrementUsage(route.Provider.Name, totalSavedTokens)
 
 		// Stream back to client.
 		w.WriteHeader(resp.StatusCode)

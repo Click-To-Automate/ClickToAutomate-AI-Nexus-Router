@@ -5,7 +5,7 @@ The **CTA AI Router** is architected for extreme performance, low latency, and z
 ## Core Flow (`stream.go`)
 
 1. **Request Interception**: An OpenAI-compatible request arrives at `http://localhost:20128/chat/completions`.
-2. **Intent Analysis**: The proxy unmarshals the JSON body early to pass the messages to `AnalyzeTask()` (located in `intent.go`).
+2. **Complexity Scoring**: The proxy unmarshals the JSON body early to pass the messages to `AnalyzeComplexity()` (located in `intent.go`).
 3. **Chunking & Pipeline Processing**: The user's prompt is split into chunks by the markdown parser (`engine.go`). 
     - The **TOON Extractor** runs synchronously for massive JSON blocks.
     - The **Context Compression Engine** calculates exact visual rendering costs versus text token costs.

@@ -18,6 +18,10 @@ func NewServer(frontendFS embed.FS) *http.ServeMux {
 	mux.HandleFunc("/v1/models", handlers.HandleModels)
 	mux.HandleFunc("/v1/keys", handlers.HandleKeys)
 	mux.HandleFunc("/v1/usage", handlers.HandleUsage)
+	mux.HandleFunc("/v1/providers", handlers.HandleProviders)
+	mux.HandleFunc("/v1/settings", handlers.HandleSettings)
+	mux.HandleFunc("/v1/cache", handlers.HandleCache)
+	mux.HandleFunc("/v1/mcp", handlers.HandleMCP)
 
 	// Frontend Static Files
 	publicFS, err := fs.Sub(frontendFS, "public")

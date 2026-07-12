@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 type UsageMap = {
-  [providerId: string]: number;
+  [providerId: string]: { count: number; tokens_saved: number };
 };
 
 // Simple mapping for nice display names and icons (removed emojis per request)
@@ -54,7 +54,8 @@ export function UsageLogs() {
     return () => clearInterval(interval);
   }, []);
 
-  const totalRequests = Object.values(usage).reduce((sum, count) => sum + count, 0);
+  const totalRequests = Object.values(usage).reduce((sum, data) => sum + (data.count || 0), 0);
+  const totalSavedTokens = Object.values(usage).reduce((sum, data) => sum + (data.tokens_saved || 0), 0);
 
   // Determine all "active" providers (those with usage OR configured keys)
   const activeProviderIds = new Set(Object.keys(usage));
@@ -62,7 +63,8 @@ export function UsageLogs() {
 
   const activeProvidersList = Array.from(activeProviderIds).map(id => ({
     id,
-    count: usage[id] || 0
+    count: usage[id]?.count || 0,
+    saved: usage[id]?.tokens_saved || 0
   })).sort((a, b) => b.count - a.count);
 
   return (
@@ -91,9 +93,15 @@ export function UsageLogs() {
         alignItems: 'center',
         boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
       }}>
-        <div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.25rem', fontWeight: 600 }}>TOTAL REQUESTS ROUTED</div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)', fontFamily: "'Inter Tight', sans-serif", letterSpacing: '-0.02em' }}>{totalRequests}</div>
+        <div style={{ display: 'flex', gap: '3rem' }}>
+          <div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.25rem', fontWeight: 600 }}>TOTAL REQUESTS ROUTED</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)', fontFamily: "'Inter Tight', sans-serif", letterSpacing: '-0.02em' }}>{totalRequests}</div>
+          </div>
+          <div style={{ paddingLeft: '3rem', borderLeft: '1px solid var(--border-color)' }}>
+            <div style={{ color: 'var(--accent)', fontSize: '0.9rem', marginBottom: '0.25rem', fontWeight: 600 }}>TOTAL TOKENS SAVED</div>
+            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--accent)', fontFamily: "'Inter Tight', sans-serif", letterSpacing: '-0.02em' }}>{totalSavedTokens.toLocaleString()}</div>
+          </div>
         </div>
       </div>
 
@@ -105,7 +113,7 @@ export function UsageLogs() {
         </div>
       ) : (
         <div className={viewMode === 'grid' ? 'provider-grid' : 'provider-list'}>
-          {activeProvidersList.map(({ id: providerId, count }) => {
+          {activeProvidersList.map(({ id: providerId, count, saved }) => {
               const meta = PROVIDER_META[providerId] || { name: providerId, icon: '', color: '#888' };
               const percentage = totalRequests > 0 ? Math.round((count / totalRequests) * 100) : 0;
               const isGrid = viewMode === 'grid';
@@ -130,6 +138,11 @@ export function UsageLogs() {
                     <p className="provider-card-subtitle" style={{ color: 'var(--text-primary)' }}>
                       <strong style={{ fontSize: isGrid ? '1.75rem' : '1.25rem', color: 'var(--text-primary)' }}>{count}</strong> requests
                     </p>
+                    {saved > 0 && (
+                      <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 600 }}>
+                        {saved.toLocaleString()} tokens saved
+                      </p>
+                    )}
                     
                     {isGrid && (
                       <div style={{ width: '100%', height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden', marginTop: '1rem' }}>

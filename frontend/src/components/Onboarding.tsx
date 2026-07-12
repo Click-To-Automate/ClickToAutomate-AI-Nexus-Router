@@ -24,8 +24,8 @@ export function Onboarding({ onComplete }: OnboardingProps) {
       <div className="glass-panel" style={{ width: '100%', maxWidth: '450px' }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <img src="https://www.clicktoautomate.in/icon-192.png" alt="Logo" style={{ width: '64px', height: '64px', marginBottom: '1rem' }} />
-          <h1 style={{ fontSize: '2rem', letterSpacing: '-0.03em' }}>Click To Automate</h1>
-          <p style={{ margin: 0 }}>AI Router Initialization</p>
+          <h1 style={{ fontSize: '2rem', letterSpacing: '-0.03em' }}>AI Nexus Router</h1>
+          <p style={{ margin: 0 }}>Local AI Gateway Initialization</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -48,16 +48,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               checked={subscribe}
               onChange={(e) => setSubscribe(e.target.checked)}
             />
-            <span className="checkbox-label">Keep me updated with AI news and exclusive offers</span>
+            <span className="checkbox-label">Keep me updated on AI Nexus Router releases and features</span>
           </label>
 
           <label className="checkbox-group" style={{ opacity: 0.5 }}>
             <input type="checkbox" disabled />
-            <span className="checkbox-label">Sync with Web Dashboard (Coming Soon)</span>
+            <span className="checkbox-label">Sync telemetry with ClickToAutomate Cloud (Coming Soon)</span>
           </label>
 
           <button type="submit" className="btn-primary" style={{ marginTop: '1rem' }}>
-            Initialize Router
+            Initialize AI Nexus Router
           </button>
         </form>
       </div>

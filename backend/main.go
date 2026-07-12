@@ -2,9 +2,7 @@ package main
 
 import (
 	"embed"
-	"fmt"
 	"log"
-	"net/http"
 
 	"ainexusrouter-core/server"
 )

@@ -7,6 +7,9 @@ import (
 	"log"
 	"net/http"
 
+	"ainexusrouter-core/config"
+	"ainexusrouter-core/db"
+	"ainexusrouter-core/discovery"
 	"ainexusrouter-core/proxy"
 )
 
@@ -51,8 +54,58 @@ func HandleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type ProviderGroup struct {
+	ProviderID   string   `json:"provider_id"`
+	ProviderName string   `json:"provider_name"`
+	Models       []string `json:"models"`
+}
+
+type ModelsResponse struct {
+	Object string          `json:"object"`
+	Data   []ProviderGroup `json:"data"`
+}
+
 func HandleModels(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	// Stub for now, can return available models from registry
-	fmt.Fprintf(w, `{"object": "list", "data": []}`)
+	
+	resp := ModelsResponse{
+		Object: "list",
+		Data:   []ProviderGroup{},
+	}
+
+	activeKeys := make(map[string]bool)
+	if db.DB != nil {
+		rows, err := db.DB.Query("SELECT DISTINCT provider_id FROM provider_keys_multi")
+		if err == nil {
+			for rows.Next() {
+				var pid string
+				if err := rows.Scan(&pid); err == nil {
+					activeKeys[pid] = true
+				}
+			}
+			rows.Close()
+		}
+	}
+
+	discovery.Mu.RLock()
+	for _, p := range config.GlobalConfig.Providers {
+		if !activeKeys[p.ID] {
+			continue
+		}
+
+		models, ok := discovery.ProviderModels[p.ID]
+		if !ok || len(models) == 0 {
+			// Fallback if discovery is pending or failed (e.g. invalid key)
+			models = []string{p.ID + "-default", p.ID + "-advanced"}
+		}
+		
+		resp.Data = append(resp.Data, ProviderGroup{
+			ProviderID:   p.ID,
+			ProviderName: p.Name,
+			Models:       models,
+		})
+	}
+	discovery.Mu.RUnlock()
+
+	json.NewEncoder(w).Encode(resp)
 }
