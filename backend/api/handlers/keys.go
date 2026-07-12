@@ -11,9 +11,10 @@ import (
 type SetKeyRequest struct {
 	ProviderID string `json:"provider_id"`
 	APIKey     string `json:"api_key"`
+	Action     string `json:"action"` // "add" or "delete", defaults to "add"
 }
 
-// HandleKeys provides GET (list keys) and POST (upsert key)
+// HandleKeys provides GET (list keys) and POST (add/delete key)
 func HandleKeys(w http.ResponseWriter, r *http.Request) {
 	// Add CORS headers for the frontend
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -27,17 +28,14 @@ func HandleKeys(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 		w.Header().Set("Content-Type", "application/json")
-		// For Phase 3, we simply return a 200 OK array.
-		// A full list endpoint would iterate through the DB,
-		// but since modernc.org/sqlite doesn't have an easy ORM loaded yet,
-		// we can query all rows.
 		
 		if db.DB == nil {
 			http.Error(w, `{"error": "DB not initialized"}`, http.StatusInternalServerError)
 			return
 		}
 
-		rows, err := db.DB.Query("SELECT provider_id, api_key FROM provider_keys")
+		// Use the new multi-keys table
+		rows, err := db.DB.Query("SELECT provider_id, api_key FROM provider_keys_multi")
 		if err != nil {
 			http.Error(w, `{"error": "Failed to query keys"}`, http.StatusInternalServerError)
 			return
@@ -48,7 +46,6 @@ func HandleKeys(w http.ResponseWriter, r *http.Request) {
 		for rows.Next() {
 			var pid, key string
 			if err := rows.Scan(&pid, &key); err == nil {
-				// Mask the key before sending to frontend
 				masked := ""
 				if len(key) > 8 {
 					masked = key[:4] + "..." + key[len(key)-4:]
@@ -58,6 +55,7 @@ func HandleKeys(w http.ResponseWriter, r *http.Request) {
 				results = append(results, map[string]string{
 					"provider_id": pid,
 					"masked_key":  masked,
+					"api_key":     key, // Send full key strictly for deletion matching
 					"is_set":      "true",
 				})
 			}
@@ -92,9 +90,16 @@ func HandleKeys(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := db.SetKey(req.ProviderID, req.APIKey); err != nil {
-			http.Error(w, "Failed to save key", http.StatusInternalServerError)
-			return
+		if req.Action == "delete" {
+			if err := db.DeleteKey(req.ProviderID, req.APIKey); err != nil {
+				http.Error(w, "Failed to delete key", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			if err := db.AddKey(req.ProviderID, req.APIKey); err != nil {
+				http.Error(w, "Failed to save key", http.StatusInternalServerError)
+				return
+			}
 		}
 
 		w.Header().Set("Content-Type", "application/json")

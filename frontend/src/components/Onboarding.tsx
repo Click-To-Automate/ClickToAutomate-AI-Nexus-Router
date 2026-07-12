@@ -22,10 +22,10 @@ export function Onboarding({ onComplete }: OnboardingProps) {
   return (
     <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>
       <div className="glass-panel" style={{ width: '100%', maxWidth: '450px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🌌</div>
-          <h1>ClickToAutomate</h1>
-          <p>AI Nexus Router Initialization</p>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <img src="https://www.clicktoautomate.in/icon-192.png" alt="Logo" style={{ width: '64px', height: '64px', marginBottom: '1rem' }} />
+          <h1 style={{ fontSize: '2rem', letterSpacing: '-0.03em' }}>Click To Automate</h1>
+          <p style={{ margin: 0 }}>AI Router Initialization</p>
         </div>
 
         <form onSubmit={handleSubmit}>

@@ -39,6 +39,12 @@ func InitDB() error {
 		provider_id TEXT PRIMARY KEY,
 		api_key TEXT NOT NULL
 	);
+	CREATE TABLE IF NOT EXISTS provider_keys_multi (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		provider_id TEXT NOT NULL,
+		api_key TEXT NOT NULL,
+		UNIQUE(provider_id, api_key)
+	);
 	CREATE TABLE IF NOT EXISTS usage_stats (
 		provider_id TEXT PRIMARY KEY,
 		request_count INTEGER DEFAULT 0
@@ -49,36 +55,57 @@ func InitDB() error {
 		return fmt.Errorf("failed to create tables: %v", err)
 	}
 
+	// Migrate old keys to new table
+	_, _ = db.Exec(`
+		INSERT OR IGNORE INTO provider_keys_multi (provider_id, api_key)
+		SELECT provider_id, api_key FROM provider_keys;
+	`)
+
 	DB = db
 	return nil
 }
 
-// GetKey retrieves a key from the database. Returns empty string if not found.
+// GetKey retrieves a random key from the database for a provider. Returns empty string if not found.
 func GetKey(providerID string) string {
 	if DB == nil {
 		return ""
 	}
 
 	var apiKey string
-	err := DB.QueryRow("SELECT api_key FROM provider_keys WHERE provider_id = ?", providerID).Scan(&apiKey)
+	// ORDER BY RANDOM() load balances the requests across available keys
+	err := DB.QueryRow("SELECT api_key FROM provider_keys_multi WHERE provider_id = ? ORDER BY RANDOM() LIMIT 1", providerID).Scan(&apiKey)
 	if err != nil {
-		return "" // Returns empty string on sql.ErrNoRows or other errors
+		return ""
 	}
 	return apiKey
 }
 
-// SetKey upserts a key into the database.
+// SetKey adds a new key into the database for a provider. (Kept for backwards compatibility if needed, but renamed/repurposed to insert)
 func SetKey(providerID, apiKey string) error {
+	return AddKey(providerID, apiKey)
+}
+
+// AddKey adds a new key.
+func AddKey(providerID, apiKey string) error {
 	if DB == nil {
 		return fmt.Errorf("database not initialized")
 	}
 
 	upsertSQL := `
-	INSERT INTO provider_keys (provider_id, api_key) 
+	INSERT INTO provider_keys_multi (provider_id, api_key) 
 	VALUES (?, ?)
-	ON CONFLICT(provider_id) DO UPDATE SET api_key=excluded.api_key;
+	ON CONFLICT(provider_id, api_key) DO NOTHING;
 	`
 	_, err := DB.Exec(upsertSQL, providerID, apiKey)
+	return err
+}
+
+// DeleteKey removes a specific key.
+func DeleteKey(providerID, apiKey string) error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	_, err := DB.Exec("DELETE FROM provider_keys_multi WHERE provider_id = ? AND api_key = ?", providerID, apiKey)
 	return err
 }
 

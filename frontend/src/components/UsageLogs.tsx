@@ -4,118 +4,152 @@ type UsageMap = {
   [providerId: string]: number;
 };
 
-// Simple mapping for nice display names and icons
+// Simple mapping for nice display names and icons (removed emojis per request)
 const PROVIDER_META: Record<string, { name: string; icon: string; color: string }> = {
-  'mistral': { name: 'Mistral', icon: '🌪️', color: '#f39c12' },
-  'cerebras': { name: 'Cerebras', icon: '🧠', color: '#e74c3c' },
-  'groq': { name: 'Groq', icon: '⚡', color: '#2ecc71' },
-  'gemini': { name: 'Google Gemini', icon: '✨', color: '#3498db' },
-  'openai': { name: 'OpenAI', icon: '🟢', color: '#10a37f' },
-  'anthropic': { name: 'Anthropic', icon: '🎎', color: '#d35400' },
-  'openrouter': { name: 'OpenRouter', icon: '🌌', color: '#9b59b6' },
-  'together': { name: 'Together AI', icon: '🤝', color: '#34495e' },
-  'ollama': { name: 'Ollama', icon: '🦙', color: '#bdc3c7' },
-  'github-models': { name: 'GitHub Models', icon: '🐙', color: '#ffffff' },
-  'sambanova': { name: 'SambaNova', icon: '💃', color: '#e67e22' },
-  'deepseek': { name: 'DeepSeek', icon: '🐋', color: '#2980b9' },
+  'mistral': { name: 'Mistral', icon: '', color: '#f39c12' },
+  'cerebras': { name: 'Cerebras', icon: '', color: '#e74c3c' },
+  'groq': { name: 'Groq', icon: '', color: '#2ecc71' },
+  'gemini': { name: 'Google Gemini', icon: '', color: '#3498db' },
+  'openai': { name: 'OpenAI', icon: '', color: '#10a37f' },
+  'anthropic': { name: 'Anthropic', icon: '', color: '#d35400' },
+  'openrouter': { name: 'OpenRouter', icon: '', color: '#9b59b6' },
+  'together': { name: 'Together AI', icon: '', color: '#34495e' },
+  'ollama': { name: 'Ollama', icon: '', color: '#bdc3c7' },
+  'github-models': { name: 'GitHub Models', icon: '', color: '#111827' },
+  'sambanova': { name: 'SambaNova', icon: '', color: '#e67e22' },
+  'deepseek': { name: 'DeepSeek', icon: '', color: '#2980b9' },
 };
 
 export function UsageLogs() {
   const [usage, setUsage] = useState<UsageMap>({});
+  const [savedKeys, setSavedKeys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const fetchUsage = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:20128/v1/usage');
-      if (response.ok) {
-        const data = await response.json();
-        setUsage(data);
+      const [usageRes, keysRes] = await Promise.all([
+        fetch('http://localhost:20128/v1/usage'),
+        fetch('http://localhost:20128/v1/keys')
+      ]);
+      
+      if (usageRes.ok) {
+        const uData = await usageRes.json();
+        setUsage(uData);
+      }
+      if (keysRes.ok) {
+        const kData = await keysRes.json();
+        setSavedKeys(kData.keys || []);
       }
     } catch (error) {
-      console.error('Failed to fetch usage', error);
+      console.error('Failed to fetch telemetry data', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsage();
-    // Poll every 5 seconds for live updates
-    const interval = setInterval(fetchUsage, 5000);
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
   const totalRequests = Object.values(usage).reduce((sum, count) => sum + count, 0);
 
+  // Determine all "active" providers (those with usage OR configured keys)
+  const activeProviderIds = new Set(Object.keys(usage));
+  savedKeys.forEach(k => activeProviderIds.add(k.provider_id));
+
+  const activeProvidersList = Array.from(activeProviderIds).map(id => ({
+    id,
+    count: usage[id] || 0
+  })).sort((a, b) => b.count - a.count);
+
   return (
     <div className="fade-in">
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Usage Telemetry</h1>
-        <p style={{ color: 'var(--text-muted)' }}>
-          Live breakdown of where your requests are being routed.
-        </p>
+      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0', fontFamily: "'Inter Tight', sans-serif" }}>Usage Telemetry</h1>
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+            Live breakdown of where your requests are being routed.
+          </p>
+        </div>
+        <div className="view-toggle">
+          <button className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}>Grid</button>
+          <button className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}>List</button>
+        </div>
       </div>
 
       <div style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
+        background: 'var(--bg-primary)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '8px',
         padding: '1.5rem',
         marginBottom: '2rem',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'center'
+        alignItems: 'center',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
       }}>
         <div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Total Requests Routed</div>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--primary)' }}>{totalRequests}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.25rem', fontWeight: 600 }}>TOTAL REQUESTS ROUTED</div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)', fontFamily: "'Inter Tight', sans-serif", letterSpacing: '-0.02em' }}>{totalRequests}</div>
         </div>
-        <div style={{ fontSize: '2.5rem' }}>📊</div>
       </div>
 
-      {loading && Object.keys(usage).length === 0 ? (
+      {loading && activeProvidersList.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>Loading telemetry...</div>
-      ) : Object.keys(usage).length === 0 ? (
-        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem', background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-          No requests have been routed yet. Try sending a message!
+      ) : activeProvidersList.length === 0 ? (
+        <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem', background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          No keys configured and no requests routed yet.
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
-          {Object.entries(usage)
-            .sort(([, a], [, b]) => b - a)
-            .map(([providerId, count]) => {
-              const meta = PROVIDER_META[providerId] || { name: providerId, icon: '🔌', color: '#888' };
+        <div className={viewMode === 'grid' ? 'provider-grid' : 'provider-list'}>
+          {activeProvidersList.map(({ id: providerId, count }) => {
+              const meta = PROVIDER_META[providerId] || { name: providerId, icon: '', color: '#888' };
               const percentage = totalRequests > 0 ? Math.round((count / totalRequests) * 100) : 0;
+              const isGrid = viewMode === 'grid';
               
               return (
-                <div key={providerId} style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '12px',
-                  padding: '1.5rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '1rem',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}>
-                  {/* Subtle top border color matching provider */}
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: meta.color }}></div>
+                <div key={providerId} className={isGrid ? 'provider-card-v2' : 'provider-card-list'}>
+                  <div className="provider-card-top-bar" style={{ background: meta.color }}></div>
                   
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      <span style={{ fontSize: '1.5rem' }}>{meta.icon}</span>
-                      <span style={{ fontWeight: '500' }}>{meta.name}</span>
+                  <div className="provider-card-header">
+                    <div className="provider-card-avatar">
+                      <img src={`/providers/${providerId}.png`} alt={meta.name} />
                     </div>
-                    <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--text)' }}>{count}</span>
+                    {isGrid && (
+                      <span className="badge" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+                        #{percentage}%
+                      </span>
+                    )}
                   </div>
 
-                  <div style={{ width: '100%', height: '8px', background: 'var(--bg)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${percentage}%`, height: '100%', background: meta.color, borderRadius: '4px' }}></div>
+                  <div className="provider-card-body">
+                    <h3 className="provider-card-title">{meta.name}</h3>
+                    <p className="provider-card-subtitle" style={{ color: 'var(--text-primary)' }}>
+                      <strong style={{ fontSize: isGrid ? '1.75rem' : '1.25rem', color: 'var(--text-primary)' }}>{count}</strong> requests
+                    </p>
+                    
+                    {isGrid && (
+                      <div style={{ width: '100%', height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden', marginTop: '1rem' }}>
+                        <div style={{ width: `${percentage}%`, height: '100%', background: meta.color, borderRadius: '3px', transition: 'width 0.5s ease-out' }}></div>
+                      </div>
+                    )}
                   </div>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    {percentage}% of traffic
+
+                  <div className="provider-card-footer">
+                    {!isGrid && (
+                      <div className="stat-block" style={{ textAlign: 'left', alignItems: 'flex-start' }}>
+                        <div style={{ width: '100px', height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${percentage}%`, height: '100%', background: meta.color, borderRadius: '3px', transition: 'width 0.5s ease-out' }}></div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="stat-block" style={{ gridColumn: isGrid ? 'span 3' : 'auto', textAlign: isGrid ? 'center' : 'right' }}>
+                      <span className="stat-label">Share of Traffic</span>
+                      <span className="stat-value">{percentage}%</span>
+                    </div>
                   </div>
                 </div>
               );
