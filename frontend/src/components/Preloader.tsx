@@ -136,7 +136,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
       });
     }
 
-    NODES.forEach((node, i) => {
+    NODES.forEach((_, i) => {
       const nodeTime = i * 0.22;
       tl.to(nodeRefs.current[i], {
         scale: 1,
@@ -271,7 +271,7 @@ export function Preloader({ onComplete }: PreloaderProps) {
                 ))}
 
                 {PATHS.map((path, idx) => (
-                  <path key={`active-path-${path.id}`} ref={(el) => (pathRefs.current[idx] = el)} d={path.d} stroke="url(#path-glow-gradient)" strokeWidth="2" fill="none" />
+                  <path key={`active-path-${path.id}`} ref={(el) => { pathRefs.current[idx] = el; }} d={path.d} stroke="url(#path-glow-gradient)" strokeWidth="2" fill="none" />
                 ))}
 
                 <path ref={pulseRef} d={ALL_PATH_D} stroke="url(#pulse-gradient)" strokeWidth="3.5" fill="none" strokeLinecap="round" filter="url(#shadow)" />
@@ -279,13 +279,13 @@ export function Preloader({ onComplete }: PreloaderProps) {
                 {NODES.map((n, i) => {
                   const IconComponent = n.Icon;
                   return (
-                    <g key={`node-${n.id}`} ref={(el) => (nodeRefs.current[i] = el)} style={{ transformOrigin: `${n.x}px ${n.y}px` }}>
+                    <g key={`node-${n.id}`} ref={(el) => { nodeRefs.current[i] = el; }} style={{ transformOrigin: `${n.x}px ${n.y}px` }}>
                       <circle cx={n.x} cy={n.y} r="24" fill="#ffffff" stroke="rgba(0, 0, 0, 0.06)" strokeWidth="1.5" style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.03))" }} />
-                      <circle ref={(el) => (nodeGlowRefs.current[i] = el)} cx={n.x} cy={n.y} r="24" fill="transparent" stroke="url(#pulse-gradient)" strokeWidth="2" filter="url(#shadow)" />
+                      <circle ref={(el) => { nodeGlowRefs.current[i] = el; }} cx={n.x} cy={n.y} r="24" fill="transparent" stroke="url(#pulse-gradient)" strokeWidth="2" filter="url(#shadow)" />
                       <g transform={`translate(${n.x - 8}, ${n.y - 8})`} stroke="#111827">
                         <IconComponent />
                       </g>
-                      <text ref={(el) => (labelRefs.current[i] = el)} x={n.align === "left" ? n.x + 36 : n.align === "right" ? n.x - 36 : n.x} y={n.align === "center" ? n.y + 42 : n.y + 5} textAnchor={n.align === "left" ? "start" : n.align === "right" ? "end" : "middle"} className="preloader-label">
+                      <text ref={(el) => { labelRefs.current[i] = el; }} x={n.align === "left" ? n.x + 36 : n.align === "right" ? n.x - 36 : n.x} y={n.align === "center" ? n.y + 42 : n.y + 5} textAnchor={n.align === "left" ? "start" : n.align === "right" ? "end" : "middle"} className="preloader-label">
                         {n.label}
                       </text>
                     </g>
@@ -298,9 +298,9 @@ export function Preloader({ onComplete }: PreloaderProps) {
 
         <div ref={textWordsContainerRef} className="preloader-text-container">
           <div className="preloader-text-inner">
-            <span ref={(el) => (textWordRefs.current[0] = el)} className="preloader-word-1">Automate.</span>
-            <span ref={(el) => (textWordRefs.current[1] = el)} className="preloader-word-2">Scale.</span>
-            <span ref={(el) => (textWordRefs.current[2] = el)} className="preloader-word-3">Grow.</span>
+            <span ref={(el) => { textWordRefs.current[0] = el; }} className="preloader-word-1">Automate.</span>
+            <span ref={(el) => { textWordRefs.current[1] = el; }} className="preloader-word-2">Scale.</span>
+            <span ref={(el) => { textWordRefs.current[2] = el; }} className="preloader-word-3">Grow.</span>
           </div>
         </div>
 
@@ -317,8 +317,8 @@ export function Preloader({ onComplete }: PreloaderProps) {
               <div className="preloader-logo-suffix">
                 {WORD.map((char, index) => (
                   <div key={index} className="preloader-char-wrapper">
-                    <span ref={el => letterGlowRefs.current[index] = el} className="preloader-char-glow">{char}</span>
-                    <span ref={el => letterRefs.current[index] = el} className="preloader-char-solid">{char}</span>
+                    <span ref={el => { letterGlowRefs.current[index] = el; }} className="preloader-char-glow">{char}</span>
+                    <span ref={el => { letterRefs.current[index] = el; }} className="preloader-char-solid">{char}</span>
                   </div>
                 ))}
               </div>

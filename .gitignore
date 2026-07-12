@@ -20,11 +20,10 @@ backend/*.out
 backend/public/*
 !backend/public/.gitkeep
 
-# Rust / Tauri
-desktop/src-tauri/target/
-desktop/src-tauri/binaries/backend*
-desktop/node_modules/
-desktop/dist/
+# Wails Desktop Application
+build/
+!build/appicon.png
+!build/windows/
 
 # OS / Editor
 .DS_Store

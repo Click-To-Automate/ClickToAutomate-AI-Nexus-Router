@@ -34,7 +34,16 @@ Visit `http://localhost:5173` in your browser.
 3. Enter your API keys for Groq, Mistral, Anthropic, Gemini, or Cerebras.
 4. The router instantly securely stores these in the local SQLite database.
 
-## 4. Usage in Cursor / IDEs
+## 4. Run the Native Desktop App (Wails)
+If you prefer a seamless, native desktop experience instead of running the backend and frontend separately in the terminal, you can run the unified Wails application:
+
+```bash
+cd "AI Router Golang"
+wails dev
+```
+*(This automatically boots the UI natively while running the `20128` Go proxy engine in the background).*
+
+## 5. Usage in Cursor / IDEs
 To use the router in any IDE like Cursor:
 - Set the Base URL to: `http://localhost:20128`
 - Model Name: `cta-ai-nexus`

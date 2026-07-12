@@ -1,6 +1,6 @@
 # ClickToAutomate AI Nexus Router (Golang Edition)
 
-ClickToAutomate AI Nexus Router is a free, open-source AI Gateway designed to route, manage, and optimize multi-provider LLM requests. Built with high-performance Golang, it is paired with a React frontend and distributed as both a standalone executable and a desktop application via Tauri.
+ClickToAutomate AI Nexus Router is a free, open-source AI Gateway designed to route, manage, and optimize multi-provider LLM requests. Built with high-performance Golang, it is paired with a React frontend and distributed as both a standalone executable and a desktop application via Wails (as Go integrates much better natively with Wails than Tauri).
 
 ## Overview
 
@@ -11,7 +11,7 @@ By leveraging Go's single-binary compilation, users can download just one execut
 ### Features
 
 - **Single Binary Distribution**: The React dashboard is fully embedded into the Go executable. Download, run, and start building.
-- **Tauri Desktop App**: A seamless native desktop experience built with Tauri, using the Go core as a powerful sidecar engine.
+- **Wails Desktop App**: A seamless native desktop experience built with Wails, natively embedding the Go backend without the need for complex sidecar architectures.
 - **Smart Routing & Resilience**: Auto-fallback across multiple providers ensuring you never hit rate limits.
 - **One Endpoint for Every Tool**: Connect Claude Code, Codex, Cursor, and any OpenAI-compatible tool to a single local endpoint.
 
@@ -27,7 +27,7 @@ Launch the ClickToAutomate AI Nexus Router desktop app. The native GUI will auto
 
 - `/backend` - The Golang core handling API routes, provider management, and serving the embedded frontend.
 - `/frontend` - The React SPA (Single Page Application) dashboard.
-- `/desktop` - The Tauri Rust shell that wraps the web dashboard and bundles the Go binary.
+- `/` (Root) - The Wails desktop wrapper that directly compiles the Go backend and React frontend into a single native application.
 
 ## Documentation
 

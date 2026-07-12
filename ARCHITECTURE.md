@@ -8,7 +8,7 @@ The system consists of three main components:
 
 1. **Golang Backend Core**: The heart of the application. It provides the REST APIs (like `/v1/chat/completions`), manages state, handles AI provider connections, executes routing strategies, and enforces token compression.
 2. **React SPA Frontend**: A client-side React application that provides the visual dashboard for managing providers, monitoring analytics, and configuring routing combos.
-3. **Tauri Desktop Shell**: A Rust-based desktop application wrapper that bundles the Go backend and presents the React frontend in a native OS window.
+3. **Wails Desktop Shell**: A Go-based desktop application wrapper that bundles the Go backend and presents the React frontend in a native OS window natively.
 
 ## Deployment Modes
 
@@ -24,17 +24,15 @@ When a user executes the resulting binary:
 
 This provides a true "zero installation" experience. The user downloads a single `.exe`, runs it, and manages the system via their web browser, whilst routing their AI IDEs to `localhost:20128/v1`.
 
-### 2. Desktop Application (Tauri Sidecar)
-For users preferring a native application experience with system tray support and window management, the Tauri app is the solution.
+### 2. Desktop Application (Wails)
+For users preferring a native application experience with system tray support and window management, the Wails app is the perfect solution. Because our backend is written in Go, Go works significantly better with Wails than Tauri, eliminating the need for complex Rust sidecar bridging.
 
-- The React frontend is bundled directly into the Tauri application.
-- The compiled Go binary is bundled as a Tauri **sidecar**.
-- When the Tauri app launches, it automatically spawns the Go sidecar process in the background.
-- The native UI communicates with the local Go backend over HTTP.
-- Closing the Tauri app automatically cleans up and shuts down the Go sidecar process.
+- The React frontend is bundled directly into the Wails application.
+- The compiled Go API is executed natively in a goroutine during the Wails startup hook.
+- Closing the Wails app automatically shuts down the Go API server smoothly.
 
 ## Technology Stack
 
 - **Backend**: Golang 1.22+
 - **Frontend**: React, Vite, TypeScript
-- **Desktop**: Tauri v2, Rust
+- **Desktop**: Wails v2, Go

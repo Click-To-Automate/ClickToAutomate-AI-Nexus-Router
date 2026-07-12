@@ -7,20 +7,19 @@ We welcome contributions from the community! This document outlines how to get y
 To work on all aspects of the project, you will need:
 - [Go 1.22+](https://go.dev/doc/install)
 - [Node.js 18+](https://nodejs.org/)
-- [Rust & Cargo](https://rustup.rs/) (Required for the Tauri desktop app)
-- [Tauri CLI](https://tauri.app/v1/guides/getting-started/setup/)
+- [Wails CLI](https://wails.io/docs/gettingstarted/installation) (Required for the desktop app)
 
 ## Repository Structure
 
 The project is split into three main directories:
 - `/backend`: The Golang AI router and HTTP server.
 - `/frontend`: The React dashboard.
-- `/desktop`: The Tauri desktop application shell.
+- `/`: The root directory contains the Wails desktop application configuration.
 
 ## Local Development Workflow
 
 ### 1. Working on the Core (Backend + Frontend)
-If you are developing features for the AI router or the web dashboard, you typically do not need to run the Tauri shell.
+If you are developing features for the AI router or the web dashboard, you typically do not need to run the Wails shell. You can develop in pure web mode.
 
 **Start the Frontend (Dev Server):**
 ```bash
@@ -39,13 +38,10 @@ Ensure that the frontend is configured to point its API calls to the Go backend'
 ### 2. Working on the Desktop App
 When testing the native desktop experience:
 
-1. You must first build the Go backend executable for your platform. The Tauri `tauri.conf.json` is configured to look for this sidecar binary.
-2. Build the Go binary and place it in the `desktop/src-tauri/binaries/` folder (naming conventions apply based on your OS).
-3. Run the Tauri dev server:
+1. Ensure you have the Wails CLI installed (`go install github.com/wailsapp/wails/v2/cmd/wails@latest`).
+2. Run the Wails dev server from the root directory:
 ```bash
-cd desktop
-npm install
-npm run tauri dev
+wails dev
 ```
 
 ## Submitting Pull Requests
