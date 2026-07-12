@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 
+	"ainexusrouter-core/apiport"
 	"ainexusrouter-core/server"
 )
 
@@ -11,9 +12,7 @@ import (
 var content embed.FS
 
 func main() {
-	port := "20128"
-	
-	if err := server.RunServer(port, content); err != nil {
+	if err := server.RunServer(apiport.Port, content); err != nil {
 		log.Fatalf("Server exited with error: %v", err)
 	}
 }

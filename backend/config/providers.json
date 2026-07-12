@@ -1,156 +1,1426 @@
 {
   "providers": [
     {
-      "id": "openai",
-      "name": "OpenAI",
-      "base_url": "https://api.openai.com/v1",
-      "env_key": "OPENAI_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["gpt-", "o1-", "o3-"]
+      "id": "360ai",
+      "name": "360 AI",
+      "base_url": "https://api.360ai.com/v1",
+      "env_key": "360AI_API_KEY",
+      "prefixes": [
+        "360ai"
+      ]
+    },
+    {
+      "id": "agentrouter",
+      "name": "AgentRouter",
+      "base_url": "https://api.agentrouter.com/v1",
+      "env_key": "AGENTROUTER_API_KEY",
+      "prefixes": [
+        "agentrouter"
+      ]
+    },
+    {
+      "id": "ai21",
+      "name": "AI21 Labs",
+      "base_url": "https://api.ai21.com/v1",
+      "env_key": "AI21_API_KEY",
+      "prefixes": [
+        "ai21"
+      ]
+    },
+    {
+      "id": "aimlapi",
+      "name": "AI/ML API",
+      "base_url": "https://api.aimlapi.com/v1",
+      "env_key": "AIMLAPI_API_KEY",
+      "prefixes": [
+        "aimlapi"
+      ]
+    },
+    {
+      "id": "alibaba",
+      "name": "Alibaba",
+      "base_url": "https://api.alibaba.com/v1",
+      "env_key": "ALIBABA_API_KEY",
+      "prefixes": [
+        "alibaba"
+      ]
+    },
+    {
+      "id": "alibaba-cn",
+      "name": "Alibaba (China)",
+      "base_url": "https://api.alibaba-cn.com/v1",
+      "env_key": "ALIBABA_CN_API_KEY",
+      "prefixes": [
+        "alibaba-cn"
+      ]
     },
     {
       "id": "anthropic",
       "name": "Anthropic",
       "base_url": "https://api.anthropic.com/v1",
       "env_key": "ANTHROPIC_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["claude-"]
+      "prefixes": [
+        "anthropic"
+      ]
     },
     {
-      "id": "gemini",
-      "name": "Google Gemini",
-      "base_url": "https://generativelanguage.googleapis.com/v1beta",
-      "env_key": "GEMINI_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["gemini-"]
+      "id": "api-airforce",
+      "name": "Api.airforce",
+      "base_url": "https://api.api-airforce.com/v1",
+      "env_key": "API_AIRFORCE_API_KEY",
+      "prefixes": [
+        "api-airforce"
+      ]
     },
     {
-      "id": "groq",
-      "name": "Groq",
-      "base_url": "https://api.groq.com/openai/v1",
-      "env_key": "GROQ_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["groq/", "llama3-", "mixtral-"]
+      "id": "arcee-ai",
+      "name": "Arcee AI",
+      "base_url": "https://api.arcee-ai.com/v1",
+      "env_key": "ARCEE_AI_API_KEY",
+      "prefixes": [
+        "arcee-ai"
+      ]
     },
     {
-      "id": "openrouter",
-      "name": "OpenRouter",
-      "base_url": "https://openrouter.ai/api/v1",
-      "env_key": "OPENROUTER_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["openrouter/"]
+      "id": "azure-ai",
+      "name": "Azure AI Foundry",
+      "base_url": "https://api.azure-ai.com/v1",
+      "env_key": "AZURE_AI_API_KEY",
+      "prefixes": [
+        "azure-ai"
+      ]
     },
     {
-      "id": "together",
-      "name": "Together AI",
-      "base_url": "https://api.together.xyz/v1",
-      "env_key": "TOGETHER_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["together/"]
+      "id": "azure-openai",
+      "name": "Azure OpenAI",
+      "base_url": "https://api.azure-openai.com/v1",
+      "env_key": "AZURE_OPENAI_API_KEY",
+      "prefixes": [
+        "azure-openai"
+      ]
     },
     {
-      "id": "ollama",
-      "name": "Ollama (Local)",
-      "base_url": "http://localhost:11434/v1",
-      "env_key": "",
-      "auth_type": "bearer",
-      "prefixes": ["ollama/"]
+      "id": "baichuan",
+      "name": "Baichuan",
+      "base_url": "https://api.baichuan.com/v1",
+      "env_key": "BAICHUAN_API_KEY",
+      "prefixes": [
+        "baichuan"
+      ]
     },
     {
-      "id": "mistral",
-      "name": "Mistral",
-      "base_url": "https://api.mistral.ai/v1",
-      "env_key": "MISTRAL_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["mistral/", "mistral-"]
+      "id": "baidu",
+      "name": "Baidu (ERNIE)",
+      "base_url": "https://api.baidu.com/v1",
+      "env_key": "BAIDU_API_KEY",
+      "prefixes": [
+        "baidu"
+      ]
+    },
+    {
+      "id": "bailian-coding-plan",
+      "name": "Alibaba Coding Plan",
+      "base_url": "https://api.bailian-coding-plan.com/v1",
+      "env_key": "BAILIAN_CODING_PLAN_API_KEY",
+      "prefixes": [
+        "bailian-coding-plan"
+      ]
+    },
+    {
+      "id": "baseten",
+      "name": "Baseten",
+      "base_url": "https://api.baseten.com/v1",
+      "env_key": "BASETEN_API_KEY",
+      "prefixes": [
+        "baseten"
+      ]
+    },
+    {
+      "id": "bazaarlink",
+      "name": "BazaarLink",
+      "base_url": "https://api.bazaarlink.com/v1",
+      "env_key": "BAZAARLINK_API_KEY",
+      "prefixes": [
+        "bazaarlink"
+      ]
+    },
+    {
+      "id": "bedrock",
+      "name": "Amazon Bedrock",
+      "base_url": "https://api.bedrock.com/v1",
+      "env_key": "BEDROCK_API_KEY",
+      "prefixes": [
+        "bedrock"
+      ]
+    },
+    {
+      "id": "black-forest-labs",
+      "name": "Black Forest Labs",
+      "base_url": "https://api.black-forest-labs.com/v1",
+      "env_key": "BLACK_FOREST_LABS_API_KEY",
+      "prefixes": [
+        "black-forest-labs"
+      ]
+    },
+    {
+      "id": "blackbox",
+      "name": "Blackbox AI",
+      "base_url": "https://api.blackbox.com/v1",
+      "env_key": "BLACKBOX_API_KEY",
+      "prefixes": [
+        "blackbox"
+      ]
+    },
+    {
+      "id": "bluesminds",
+      "name": "BluesMinds",
+      "base_url": "https://api.bluesminds.com/v1",
+      "env_key": "BLUESMINDS_API_KEY",
+      "prefixes": [
+        "bluesminds"
+      ]
+    },
+    {
+      "id": "byteplus",
+      "name": "BytePlus ModelArk",
+      "base_url": "https://api.byteplus.com/v1",
+      "env_key": "BYTEPLUS_API_KEY",
+      "prefixes": [
+        "byteplus"
+      ]
+    },
+    {
+      "id": "bytez",
+      "name": "Bytez",
+      "base_url": "https://api.bytez.com/v1",
+      "env_key": "BYTEZ_API_KEY",
+      "prefixes": [
+        "bytez"
+      ]
+    },
+    {
+      "id": "cablyai",
+      "name": "CablyAI",
+      "base_url": "https://api.cablyai.com/v1",
+      "env_key": "CABLYAI_API_KEY",
+      "prefixes": [
+        "cablyai"
+      ]
     },
     {
       "id": "cerebras",
       "name": "Cerebras",
-      "base_url": "https://api.cerebras.ai/v1",
+      "base_url": "https://api.cerebras.com/v1",
       "env_key": "CEREBRAS_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["cerebras/"]
+      "prefixes": [
+        "cerebras"
+      ]
     },
     {
-      "id": "github-models",
-      "name": "GitHub Models",
-      "base_url": "https://models.inference.ai.azure.com",
-      "env_key": "GITHUB_TOKEN",
-      "auth_type": "bearer",
-      "prefixes": ["github/"]
+      "id": "chutes",
+      "name": "Chutes.ai",
+      "base_url": "https://api.chutes.com/v1",
+      "env_key": "CHUTES_API_KEY",
+      "prefixes": [
+        "chutes"
+      ]
     },
     {
-      "id": "sambanova",
-      "name": "SambaNova",
-      "base_url": "https://api.sambanova.ai/v1",
-      "env_key": "SAMBANOVA_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["sambanova/"]
+      "id": "clarifai",
+      "name": "Clarifai",
+      "base_url": "https://api.clarifai.com/v1",
+      "env_key": "CLARIFAI_API_KEY",
+      "prefixes": [
+        "clarifai"
+      ]
+    },
+    {
+      "id": "cloudflare-ai",
+      "name": "Cloudflare Workers AI",
+      "base_url": "https://api.cloudflare-ai.com/v1",
+      "env_key": "CLOUDFLARE_AI_API_KEY",
+      "prefixes": [
+        "cloudflare-ai"
+      ]
+    },
+    {
+      "id": "codestral",
+      "name": "Codestral",
+      "base_url": "https://api.codestral.com/v1",
+      "env_key": "CODESTRAL_API_KEY",
+      "prefixes": [
+        "codestral"
+      ]
+    },
+    {
+      "id": "cohere",
+      "name": "Cohere",
+      "base_url": "https://api.cohere.com/v1",
+      "env_key": "COHERE_API_KEY",
+      "prefixes": [
+        "cohere"
+      ]
+    },
+    {
+      "id": "command-code",
+      "name": "Command Code",
+      "base_url": "https://api.command-code.com/v1",
+      "env_key": "COMMAND_CODE_API_KEY",
+      "prefixes": [
+        "command-code"
+      ]
+    },
+    {
+      "id": "coze",
+      "name": "Coze",
+      "base_url": "https://api.coze.com/v1",
+      "env_key": "COZE_API_KEY",
+      "prefixes": [
+        "coze"
+      ]
+    },
+    {
+      "id": "crof",
+      "name": "CrofAI",
+      "base_url": "https://api.crof.com/v1",
+      "env_key": "CROF_API_KEY",
+      "prefixes": [
+        "crof"
+      ]
+    },
+    {
+      "id": "databricks",
+      "name": "Databricks",
+      "base_url": "https://api.databricks.com/v1",
+      "env_key": "DATABRICKS_API_KEY",
+      "prefixes": [
+        "databricks"
+      ]
+    },
+    {
+      "id": "datarobot",
+      "name": "DataRobot",
+      "base_url": "https://api.datarobot.com/v1",
+      "env_key": "DATAROBOT_API_KEY",
+      "prefixes": [
+        "datarobot"
+      ]
+    },
+    {
+      "id": "deepinfra",
+      "name": "DeepInfra",
+      "base_url": "https://api.deepinfra.com/v1",
+      "env_key": "DEEPINFRA_API_KEY",
+      "prefixes": [
+        "deepinfra"
+      ]
     },
     {
       "id": "deepseek",
       "name": "DeepSeek",
       "base_url": "https://api.deepseek.com/v1",
       "env_key": "DEEPSEEK_API_KEY",
-      "auth_type": "bearer",
-      "prefixes": ["deepseek/"]
+      "prefixes": [
+        "deepseek"
+      ]
     },
     {
-      "id": "deepseek-web",
-      "name": "DeepSeek Web",
-      "base_url": "https://chat.deepseek.com/api/v0",
-      "env_key": "",
-      "auth_type": "bearer_token",
-      "prefixes": ["deepseek-web/"]
+      "id": "dgrid",
+      "name": "DGrid",
+      "base_url": "https://api.dgrid.com/v1",
+      "env_key": "DGRID_API_KEY",
+      "prefixes": [
+        "dgrid"
+      ]
     },
     {
-      "id": "gemini-web",
-      "name": "Gemini Web",
-      "base_url": "https://aistudio.googleapis.com/v1",
-      "env_key": "",
-      "auth_type": "cookie",
-      "prefixes": ["gemini-web/"]
+      "id": "dify",
+      "name": "Dify",
+      "base_url": "https://api.dify.com/v1",
+      "env_key": "DIFY_API_KEY",
+      "prefixes": [
+        "dify"
+      ]
     },
     {
-      "id": "claude-web",
-      "name": "Claude Web",
-      "base_url": "https://claude.ai/api",
-      "env_key": "",
-      "auth_type": "cookie",
-      "prefixes": ["claude-web/"]
+      "id": "dit",
+      "name": "DIT.ai",
+      "base_url": "https://api.dit.com/v1",
+      "env_key": "DIT_API_KEY",
+      "prefixes": [
+        "dit"
+      ]
     },
     {
-      "id": "qwen-web",
-      "name": "Qwen Web",
-      "base_url": "https://chat.qwen.ai/api",
-      "env_key": "",
-      "auth_type": "bearer_token",
-      "prefixes": ["qwen-web/"]
+      "id": "doubao",
+      "name": "Doubao",
+      "base_url": "https://api.doubao.com/v1",
+      "env_key": "DOUBAO_API_KEY",
+      "prefixes": [
+        "doubao"
+      ]
     },
     {
-      "id": "github",
-      "name": "GitHub Copilot",
-      "base_url": "https://api.githubcopilot.com",
-      "env_key": "GITHUB_COPILOT_TOKEN",
-      "auth_type": "oauth",
-      "prefixes": ["github-copilot/"]
+      "id": "empower",
+      "name": "Empower",
+      "base_url": "https://api.empower.com/v1",
+      "env_key": "EMPOWER_API_KEY",
+      "prefixes": [
+        "empower"
+      ]
     },
     {
-      "id": "cursor",
-      "name": "Cursor IDE",
-      "base_url": "https://api2.cursor.sh/v1",
-      "env_key": "",
-      "auth_type": "oauth",
-      "prefixes": ["cursor/"]
+      "id": "factory",
+      "name": "Factory",
+      "base_url": "https://api.factory.com/v1",
+      "env_key": "FACTORY_API_KEY",
+      "prefixes": [
+        "factory"
+      ]
+    },
+    {
+      "id": "fal-ai",
+      "name": "Fal.ai",
+      "base_url": "https://api.fal-ai.com/v1",
+      "env_key": "FAL_AI_API_KEY",
+      "prefixes": [
+        "fal-ai"
+      ]
+    },
+    {
+      "id": "featherless-ai",
+      "name": "Featherless AI",
+      "base_url": "https://api.featherless-ai.com/v1",
+      "env_key": "FEATHERLESS_AI_API_KEY",
+      "prefixes": [
+        "featherless-ai"
+      ]
+    },
+    {
+      "id": "fenayai",
+      "name": "FenayAI",
+      "base_url": "https://api.fenayai.com/v1",
+      "env_key": "FENAYAI_API_KEY",
+      "prefixes": [
+        "fenayai"
+      ]
+    },
+    {
+      "id": "firecrawl",
+      "name": "Firecrawl",
+      "base_url": "https://api.firecrawl.com/v1",
+      "env_key": "FIRECRAWL_API_KEY",
+      "prefixes": [
+        "firecrawl"
+      ]
+    },
+    {
+      "id": "fireworks",
+      "name": "Fireworks AI",
+      "base_url": "https://api.fireworks.com/v1",
+      "env_key": "FIREWORKS_API_KEY",
+      "prefixes": [
+        "fireworks"
+      ]
+    },
+    {
+      "id": "freeaiapikey",
+      "name": "FreeAIAPIKey",
+      "base_url": "https://api.freeaiapikey.com/v1",
+      "env_key": "FREEAIAPIKEY_API_KEY",
+      "prefixes": [
+        "freeaiapikey"
+      ]
+    },
+    {
+      "id": "freemodel-dev",
+      "name": "FreeModel.dev",
+      "base_url": "https://api.freemodel-dev.com/v1",
+      "env_key": "FREEMODEL_DEV_API_KEY",
+      "prefixes": [
+        "freemodel-dev"
+      ]
+    },
+    {
+      "id": "friendliai",
+      "name": "FriendliAI",
+      "base_url": "https://api.friendliai.com/v1",
+      "env_key": "FRIENDLIAI_API_KEY",
+      "prefixes": [
+        "friendliai"
+      ]
+    },
+    {
+      "id": "galadriel",
+      "name": "Galadriel",
+      "base_url": "https://api.galadriel.com/v1",
+      "env_key": "GALADRIEL_API_KEY",
+      "prefixes": [
+        "galadriel"
+      ]
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini (Google AI Studio)",
+      "base_url": "https://api.gemini.com/v1",
+      "env_key": "GEMINI_API_KEY",
+      "prefixes": [
+        "gemini"
+      ]
+    },
+    {
+      "id": "getgoapi",
+      "name": "GoAPI",
+      "base_url": "https://api.getgoapi.com/v1",
+      "env_key": "GETGOAPI_API_KEY",
+      "prefixes": [
+        "getgoapi"
+      ]
+    },
+    {
+      "id": "gigachat",
+      "name": "GigaChat (Sber)",
+      "base_url": "https://api.gigachat.com/v1",
+      "env_key": "GIGACHAT_API_KEY",
+      "prefixes": [
+        "gigachat"
+      ]
+    },
+    {
+      "id": "github-models",
+      "name": "GitHub Models",
+      "base_url": "https://api.github-models.com/v1",
+      "env_key": "GITHUB_MODELS_API_KEY",
+      "prefixes": [
+        "github-models"
+      ]
+    },
+    {
+      "id": "gitlab",
+      "name": "GitLab Duo PAT",
+      "base_url": "https://api.gitlab.com/v1",
+      "env_key": "GITLAB_API_KEY",
+      "prefixes": [
+        "gitlab"
+      ]
+    },
+    {
+      "id": "gitlawb",
+      "name": "Gitlawb Opengateway (MiMo)",
+      "base_url": "https://api.gitlawb.com/v1",
+      "env_key": "GITLAWB_API_KEY",
+      "prefixes": [
+        "gitlawb"
+      ]
+    },
+    {
+      "id": "gitlawb-gmi",
+      "name": "Gitlawb Opengateway (GMI Cloud)",
+      "base_url": "https://api.gitlawb-gmi.com/v1",
+      "env_key": "GITLAWB_GMI_API_KEY",
+      "prefixes": [
+        "gitlawb-gmi"
+      ]
+    },
+    {
+      "id": "glhf",
+      "name": "GLHF Chat",
+      "base_url": "https://api.glhf.com/v1",
+      "env_key": "GLHF_API_KEY",
+      "prefixes": [
+        "glhf"
+      ]
+    },
+    {
+      "id": "glm",
+      "name": "GLM Coding",
+      "base_url": "https://api.glm.com/v1",
+      "env_key": "GLM_API_KEY",
+      "prefixes": [
+        "glm"
+      ]
+    },
+    {
+      "id": "glm-cn",
+      "name": "GLM Coding (China)",
+      "base_url": "https://api.glm-cn.com/v1",
+      "env_key": "GLM_CN_API_KEY",
+      "prefixes": [
+        "glm-cn"
+      ]
+    },
+    {
+      "id": "glmt",
+      "name": "GLM Thinking",
+      "base_url": "https://api.glmt.com/v1",
+      "env_key": "GLMT_API_KEY",
+      "prefixes": [
+        "glmt"
+      ]
+    },
+    {
+      "id": "groq",
+      "name": "Groq",
+      "base_url": "https://api.groq.com/openai/v1",
+      "env_key": "GROQ_API_KEY",
+      "prefixes": [
+        "groq"
+      ]
+    },
+    {
+      "id": "hackclub",
+      "name": "Hackclub AI",
+      "base_url": "https://api.hackclub.com/v1",
+      "env_key": "HACKCLUB_API_KEY",
+      "prefixes": [
+        "hackclub"
+      ]
+    },
+    {
+      "id": "haiper",
+      "name": "Haiper",
+      "base_url": "https://api.haiper.com/v1",
+      "env_key": "HAIPER_API_KEY",
+      "prefixes": [
+        "haiper"
+      ]
+    },
+    {
+      "id": "heroku",
+      "name": "Heroku AI",
+      "base_url": "https://api.heroku.com/v1",
+      "env_key": "HEROKU_API_KEY",
+      "prefixes": [
+        "heroku"
+      ]
+    },
+    {
+      "id": "huggingface",
+      "name": "HuggingFace",
+      "base_url": "https://api.huggingface.com/v1",
+      "env_key": "HUGGINGFACE_API_KEY",
+      "prefixes": [
+        "huggingface"
+      ]
+    },
+    {
+      "id": "hyperbolic",
+      "name": "Hyperbolic",
+      "base_url": "https://api.hyperbolic.com/v1",
+      "env_key": "HYPERBOLIC_API_KEY",
+      "prefixes": [
+        "hyperbolic"
+      ]
+    },
+    {
+      "id": "ideogram",
+      "name": "Ideogram",
+      "base_url": "https://api.ideogram.com/v1",
+      "env_key": "IDEOGRAM_API_KEY",
+      "prefixes": [
+        "ideogram"
+      ]
+    },
+    {
+      "id": "iflytek",
+      "name": "iFlytek Spark",
+      "base_url": "https://api.iflytek.com/v1",
+      "env_key": "IFLYTEK_API_KEY",
+      "prefixes": [
+        "iflytek"
+      ]
+    },
+    {
+      "id": "inclusionai",
+      "name": "InclusionAI",
+      "base_url": "https://api.inclusionai.com/v1",
+      "env_key": "INCLUSIONAI_API_KEY",
+      "prefixes": [
+        "inclusionai"
+      ]
+    },
+    {
+      "id": "inference-net",
+      "name": "Inference.net",
+      "base_url": "https://api.inference-net.com/v1",
+      "env_key": "INFERENCE_NET_API_KEY",
+      "prefixes": [
+        "inference-net"
+      ]
+    },
+    {
+      "id": "jina-ai",
+      "name": "Jina AI",
+      "base_url": "https://api.jina-ai.com/v1",
+      "env_key": "JINA_AI_API_KEY",
+      "prefixes": [
+        "jina-ai"
+      ]
+    },
+    {
+      "id": "jina-reader",
+      "name": "Jina Reader",
+      "base_url": "https://api.jina-reader.com/v1",
+      "env_key": "JINA_READER_API_KEY",
+      "prefixes": [
+        "jina-reader"
+      ]
+    },
+    {
+      "id": "kie",
+      "name": "KIE.AI",
+      "base_url": "https://api.kie.com/v1",
+      "env_key": "KIE_API_KEY",
+      "prefixes": [
+        "kie"
+      ]
+    },
+    {
+      "id": "kilo-gateway",
+      "name": "Kilo Gateway",
+      "base_url": "https://api.kilo-gateway.com/v1",
+      "env_key": "KILO_GATEWAY_API_KEY",
+      "prefixes": [
+        "kilo-gateway"
+      ]
+    },
+    {
+      "id": "kimi",
+      "name": "Kimi",
+      "base_url": "https://api.kimi.com/v1",
+      "env_key": "KIMI_API_KEY",
+      "prefixes": [
+        "kimi"
+      ]
+    },
+    {
+      "id": "kimi-coding-apikey",
+      "name": "Kimi Coding (API Key)",
+      "base_url": "https://api.kimi-coding-apikey.com/v1",
+      "env_key": "KIMI_CODING_APIKEY_API_KEY",
+      "prefixes": [
+        "kimi-coding-apikey"
+      ]
+    },
+    {
+      "id": "kluster",
+      "name": "Kluster AI",
+      "base_url": "https://api.kluster.com/v1",
+      "env_key": "KLUSTER_API_KEY",
+      "prefixes": [
+        "kluster"
+      ]
+    },
+    {
+      "id": "lambda-ai",
+      "name": "Lambda AI",
+      "base_url": "https://api.lambda-ai.com/v1",
+      "env_key": "LAMBDA_AI_API_KEY",
+      "prefixes": [
+        "lambda-ai"
+      ]
+    },
+    {
+      "id": "laozhang",
+      "name": "LaoZhang AI",
+      "base_url": "https://api.laozhang.com/v1",
+      "env_key": "LAOZHANG_API_KEY",
+      "prefixes": [
+        "laozhang"
+      ]
+    },
+    {
+      "id": "leonardo",
+      "name": "Leonardo AI",
+      "base_url": "https://api.leonardo.com/v1",
+      "env_key": "LEONARDO_API_KEY",
+      "prefixes": [
+        "leonardo"
+      ]
+    },
+    {
+      "id": "liquid",
+      "name": "Liquid AI",
+      "base_url": "https://api.liquid.com/v1",
+      "env_key": "LIQUID_API_KEY",
+      "prefixes": [
+        "liquid"
+      ]
+    },
+    {
+      "id": "llamagate",
+      "name": "LlamaGate",
+      "base_url": "https://api.llamagate.com/v1",
+      "env_key": "LLAMAGATE_API_KEY",
+      "prefixes": [
+        "llamagate"
+      ]
     },
     {
       "id": "llm7",
-      "name": "LLM7",
-      "base_url": "https://api.llm7.io/v1",
-      "env_key": "",
-      "auth_type": "bearer",
-      "prefixes": ["llm7/"]
+      "name": "LLM7.io",
+      "base_url": "https://api.llm7.com/v1",
+      "env_key": "LLM7_API_KEY",
+      "prefixes": [
+        "llm7"
+      ]
+    },
+    {
+      "id": "longcat",
+      "name": "LongCat AI",
+      "base_url": "https://api.longcat.com/v1",
+      "env_key": "LONGCAT_API_KEY",
+      "prefixes": [
+        "longcat"
+      ]
+    },
+    {
+      "id": "maritalk",
+      "name": "Maritalk",
+      "base_url": "https://api.maritalk.com/v1",
+      "env_key": "MARITALK_API_KEY",
+      "prefixes": [
+        "maritalk"
+      ]
+    },
+    {
+      "id": "meta-llama",
+      "name": "Meta Llama API",
+      "base_url": "https://api.meta-llama.com/v1",
+      "env_key": "META_LLAMA_API_KEY",
+      "prefixes": [
+        "meta-llama"
+      ]
+    },
+    {
+      "id": "minimax",
+      "name": "Minimax Coding",
+      "base_url": "https://api.minimax.com/v1",
+      "env_key": "MINIMAX_API_KEY",
+      "prefixes": [
+        "minimax"
+      ]
+    },
+    {
+      "id": "minimax-cn",
+      "name": "Minimax (China)",
+      "base_url": "https://api.minimax-cn.com/v1",
+      "env_key": "MINIMAX_CN_API_KEY",
+      "prefixes": [
+        "minimax-cn"
+      ]
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral",
+      "base_url": "https://api.mistral.ai/v1",
+      "env_key": "MISTRAL_API_KEY",
+      "prefixes": [
+        "mistral"
+      ]
+    },
+    {
+      "id": "modal",
+      "name": "Modal",
+      "base_url": "https://api.modal.com/v1",
+      "env_key": "MODAL_API_KEY",
+      "prefixes": [
+        "modal"
+      ]
+    },
+    {
+      "id": "monsterapi",
+      "name": "MonsterAPI",
+      "base_url": "https://api.monsterapi.com/v1",
+      "env_key": "MONSTERAPI_API_KEY",
+      "prefixes": [
+        "monsterapi"
+      ]
+    },
+    {
+      "id": "moonshot",
+      "name": "Moonshot AI",
+      "base_url": "https://api.moonshot.com/v1",
+      "env_key": "MOONSHOT_API_KEY",
+      "prefixes": [
+        "moonshot"
+      ]
+    },
+    {
+      "id": "morph",
+      "name": "Morph",
+      "base_url": "https://api.morph.com/v1",
+      "env_key": "MORPH_API_KEY",
+      "prefixes": [
+        "morph"
+      ]
+    },
+    {
+      "id": "nanogpt",
+      "name": "NanoGPT",
+      "base_url": "https://api.nanogpt.com/v1",
+      "env_key": "NANOGPT_API_KEY",
+      "prefixes": [
+        "nanogpt"
+      ]
+    },
+    {
+      "id": "nebius",
+      "name": "Nebius AI",
+      "base_url": "https://api.nebius.com/v1",
+      "env_key": "NEBIUS_API_KEY",
+      "prefixes": [
+        "nebius"
+      ]
+    },
+    {
+      "id": "nlpcloud",
+      "name": "NLP Cloud",
+      "base_url": "https://api.nlpcloud.com/v1",
+      "env_key": "NLPCLOUD_API_KEY",
+      "prefixes": [
+        "nlpcloud"
+      ]
+    },
+    {
+      "id": "nomic",
+      "name": "Nomic",
+      "base_url": "https://api.nomic.com/v1",
+      "env_key": "NOMIC_API_KEY",
+      "prefixes": [
+        "nomic"
+      ]
+    },
+    {
+      "id": "nous-research",
+      "name": "Nous Research",
+      "base_url": "https://api.nous-research.com/v1",
+      "env_key": "NOUS_RESEARCH_API_KEY",
+      "prefixes": [
+        "nous-research"
+      ]
+    },
+    {
+      "id": "novita",
+      "name": "Novita AI",
+      "base_url": "https://api.novita.com/v1",
+      "env_key": "NOVITA_API_KEY",
+      "prefixes": [
+        "novita"
+      ]
+    },
+    {
+      "id": "nscale",
+      "name": "nScale",
+      "base_url": "https://api.nscale.com/v1",
+      "env_key": "NSCALE_API_KEY",
+      "prefixes": [
+        "nscale"
+      ]
+    },
+    {
+      "id": "nvidia",
+      "name": "NVIDIA NIM",
+      "base_url": "https://api.nvidia.com/v1",
+      "env_key": "NVIDIA_API_KEY",
+      "prefixes": [
+        "nvidia"
+      ]
+    },
+    {
+      "id": "oci",
+      "name": "OCI Generative AI",
+      "base_url": "https://api.oci.com/v1",
+      "env_key": "OCI_API_KEY",
+      "prefixes": [
+        "oci"
+      ]
+    },
+    {
+      "id": "ollama-cloud",
+      "name": "Ollama Cloud",
+      "base_url": "https://api.ollama-cloud.com/v1",
+      "env_key": "OLLAMA_CLOUD_API_KEY",
+      "prefixes": [
+        "ollama-cloud"
+      ]
+    },
+    {
+      "id": "openadapter",
+      "name": "OpenAdapter",
+      "base_url": "https://api.openadapter.com/v1",
+      "env_key": "OPENADAPTER_API_KEY",
+      "prefixes": [
+        "openadapter"
+      ]
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "base_url": "https://api.openai.com/v1",
+      "env_key": "OPENAI_API_KEY",
+      "prefixes": [
+        "openai"
+      ]
+    },
+    {
+      "id": "opencode-go",
+      "name": "OpenCode Go",
+      "base_url": "https://api.opencode-go.com/v1",
+      "env_key": "OPENCODE_GO_API_KEY",
+      "prefixes": [
+        "opencode-go"
+      ]
+    },
+    {
+      "id": "opencode-zen",
+      "name": "OpenCode Zen",
+      "base_url": "https://api.opencode-zen.com/v1",
+      "env_key": "OPENCODE_ZEN_API_KEY",
+      "prefixes": [
+        "opencode-zen"
+      ]
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "base_url": "https://openrouter.ai/api/v1",
+      "env_key": "OPENROUTER_API_KEY",
+      "prefixes": [
+        "openrouter"
+      ]
+    },
+    {
+      "id": "orcarouter",
+      "name": "OrcaRouter",
+      "base_url": "https://api.orcarouter.com/v1",
+      "env_key": "ORCAROUTER_API_KEY",
+      "prefixes": [
+        "orcarouter"
+      ]
+    },
+    {
+      "id": "ovhcloud",
+      "name": "OVHcloud AI",
+      "base_url": "https://api.ovhcloud.com/v1",
+      "env_key": "OVHCLOUD_API_KEY",
+      "prefixes": [
+        "ovhcloud"
+      ]
+    },
+    {
+      "id": "perplexity",
+      "name": "Perplexity",
+      "base_url": "https://api.perplexity.com/v1",
+      "env_key": "PERPLEXITY_API_KEY",
+      "prefixes": [
+        "perplexity"
+      ]
+    },
+    {
+      "id": "piapi",
+      "name": "PiAPI",
+      "base_url": "https://api.piapi.com/v1",
+      "env_key": "PIAPI_API_KEY",
+      "prefixes": [
+        "piapi"
+      ]
+    },
+    {
+      "id": "pioneer",
+      "name": "Pioneer AI",
+      "base_url": "https://api.pioneer.com/v1",
+      "env_key": "PIONEER_API_KEY",
+      "prefixes": [
+        "pioneer"
+      ]
+    },
+    {
+      "id": "poe",
+      "name": "Poe",
+      "base_url": "https://api.poe.com/v1",
+      "env_key": "POE_API_KEY",
+      "prefixes": [
+        "poe"
+      ]
+    },
+    {
+      "id": "pollinations",
+      "name": "Pollinations AI",
+      "base_url": "https://api.pollinations.com/v1",
+      "env_key": "POLLINATIONS_API_KEY",
+      "prefixes": [
+        "pollinations"
+      ]
+    },
+    {
+      "id": "predibase",
+      "name": "Predibase",
+      "base_url": "https://api.predibase.com/v1",
+      "env_key": "PREDIBASE_API_KEY",
+      "prefixes": [
+        "predibase"
+      ]
+    },
+    {
+      "id": "publicai",
+      "name": "PublicAI",
+      "base_url": "https://api.publicai.com/v1",
+      "env_key": "PUBLICAI_API_KEY",
+      "prefixes": [
+        "publicai"
+      ]
+    },
+    {
+      "id": "puter",
+      "name": "Puter AI",
+      "base_url": "https://api.puter.com/v1",
+      "env_key": "PUTER_API_KEY",
+      "prefixes": [
+        "puter"
+      ]
+    },
+    {
+      "id": "qianfan",
+      "name": "Baidu Qianfan",
+      "base_url": "https://api.qianfan.com/v1",
+      "env_key": "QIANFAN_API_KEY",
+      "prefixes": [
+        "qianfan"
+      ]
+    },
+    {
+      "id": "recraft",
+      "name": "Recraft",
+      "base_url": "https://api.recraft.com/v1",
+      "env_key": "RECRAFT_API_KEY",
+      "prefixes": [
+        "recraft"
+      ]
+    },
+    {
+      "id": "reka",
+      "name": "Reka",
+      "base_url": "https://api.reka.com/v1",
+      "env_key": "REKA_API_KEY",
+      "prefixes": [
+        "reka"
+      ]
+    },
+    {
+      "id": "runwayml",
+      "name": "Runway",
+      "base_url": "https://api.runwayml.com/v1",
+      "env_key": "RUNWAYML_API_KEY",
+      "prefixes": [
+        "runwayml"
+      ]
+    },
+    {
+      "id": "sambanova",
+      "name": "SambaNova",
+      "base_url": "https://api.sambanova.com/v1",
+      "env_key": "SAMBANOVA_API_KEY",
+      "prefixes": [
+        "sambanova"
+      ]
+    },
+    {
+      "id": "sap",
+      "name": "SAP Generative AI Hub",
+      "base_url": "https://api.sap.com/v1",
+      "env_key": "SAP_API_KEY",
+      "prefixes": [
+        "sap"
+      ]
+    },
+    {
+      "id": "scaleway",
+      "name": "Scaleway AI",
+      "base_url": "https://api.scaleway.com/v1",
+      "env_key": "SCALEWAY_API_KEY",
+      "prefixes": [
+        "scaleway"
+      ]
+    },
+    {
+      "id": "sensenova",
+      "name": "SenseNova",
+      "base_url": "https://api.sensenova.com/v1",
+      "env_key": "SENSENOVA_API_KEY",
+      "prefixes": [
+        "sensenova"
+      ]
+    },
+    {
+      "id": "siliconflow",
+      "name": "SiliconFlow",
+      "base_url": "https://api.siliconflow.com/v1",
+      "env_key": "SILICONFLOW_API_KEY",
+      "prefixes": [
+        "siliconflow"
+      ]
+    },
+    {
+      "id": "snowflake",
+      "name": "Snowflake Cortex",
+      "base_url": "https://api.snowflake.com/v1",
+      "env_key": "SNOWFLAKE_API_KEY",
+      "prefixes": [
+        "snowflake"
+      ]
+    },
+    {
+      "id": "sparkdesk",
+      "name": "SparkDesk",
+      "base_url": "https://api.sparkdesk.com/v1",
+      "env_key": "SPARKDESK_API_KEY",
+      "prefixes": [
+        "sparkdesk"
+      ]
+    },
+    {
+      "id": "stability-ai",
+      "name": "Stability AI",
+      "base_url": "https://api.stability-ai.com/v1",
+      "env_key": "STABILITY_AI_API_KEY",
+      "prefixes": [
+        "stability-ai"
+      ]
+    },
+    {
+      "id": "stepfun",
+      "name": "StepFun",
+      "base_url": "https://api.stepfun.com/v1",
+      "env_key": "STEPFUN_API_KEY",
+      "prefixes": [
+        "stepfun"
+      ]
+    },
+    {
+      "id": "suno",
+      "name": "Suno",
+      "base_url": "https://api.suno.com/v1",
+      "env_key": "SUNO_API_KEY",
+      "prefixes": [
+        "suno"
+      ]
+    },
+    {
+      "id": "synthetic",
+      "name": "Synthetic",
+      "base_url": "https://api.synthetic.com/v1",
+      "env_key": "SYNTHETIC_API_KEY",
+      "prefixes": [
+        "synthetic"
+      ]
+    },
+    {
+      "id": "tencent",
+      "name": "Tencent Hunyuan",
+      "base_url": "https://api.tencent.com/v1",
+      "env_key": "TENCENT_API_KEY",
+      "prefixes": [
+        "tencent"
+      ]
+    },
+    {
+      "id": "thebai",
+      "name": "TheB.AI",
+      "base_url": "https://api.thebai.com/v1",
+      "env_key": "THEBAI_API_KEY",
+      "prefixes": [
+        "thebai"
+      ]
+    },
+    {
+      "id": "together",
+      "name": "Together AI",
+      "base_url": "https://api.together.xyz/v1",
+      "env_key": "TOGETHER_API_KEY",
+      "prefixes": [
+        "together"
+      ]
+    },
+    {
+      "id": "tokenrouter",
+      "name": "TokenRouter",
+      "base_url": "https://api.tokenrouter.com/v1",
+      "env_key": "TOKENROUTER_API_KEY",
+      "prefixes": [
+        "tokenrouter"
+      ]
+    },
+    {
+      "id": "topaz",
+      "name": "Topaz",
+      "base_url": "https://api.topaz.com/v1",
+      "env_key": "TOPAZ_API_KEY",
+      "prefixes": [
+        "topaz"
+      ]
+    },
+    {
+      "id": "udio",
+      "name": "Udio",
+      "base_url": "https://api.udio.com/v1",
+      "env_key": "UDIO_API_KEY",
+      "prefixes": [
+        "udio"
+      ]
+    },
+    {
+      "id": "uncloseai",
+      "name": "UncloseAI",
+      "base_url": "https://api.uncloseai.com/v1",
+      "env_key": "UNCLOSEAI_API_KEY",
+      "prefixes": [
+        "uncloseai"
+      ]
+    },
+    {
+      "id": "upstage",
+      "name": "Upstage",
+      "base_url": "https://api.upstage.com/v1",
+      "env_key": "UPSTAGE_API_KEY",
+      "prefixes": [
+        "upstage"
+      ]
+    },
+    {
+      "id": "v0-vercel",
+      "name": "v0 (Vercel)",
+      "base_url": "https://api.v0-vercel.com/v1",
+      "env_key": "V0_VERCEL_API_KEY",
+      "prefixes": [
+        "v0-vercel"
+      ]
+    },
+    {
+      "id": "venice",
+      "name": "Venice.ai",
+      "base_url": "https://api.venice.com/v1",
+      "env_key": "VENICE_API_KEY",
+      "prefixes": [
+        "venice"
+      ]
+    },
+    {
+      "id": "vercel-ai-gateway",
+      "name": "Vercel AI Gateway",
+      "base_url": "https://api.vercel-ai-gateway.com/v1",
+      "env_key": "VERCEL_AI_GATEWAY_API_KEY",
+      "prefixes": [
+        "vercel-ai-gateway"
+      ]
+    },
+    {
+      "id": "vertex",
+      "name": "Vertex AI",
+      "base_url": "https://api.vertex.com/v1",
+      "env_key": "VERTEX_API_KEY",
+      "prefixes": [
+        "vertex"
+      ]
+    },
+    {
+      "id": "vertex-partner",
+      "name": "Vertex AI Partners",
+      "base_url": "https://api.vertex-partner.com/v1",
+      "env_key": "VERTEX_PARTNER_API_KEY",
+      "prefixes": [
+        "vertex-partner"
+      ]
+    },
+    {
+      "id": "volcengine",
+      "name": "Volcengine",
+      "base_url": "https://api.volcengine.com/v1",
+      "env_key": "VOLCENGINE_API_KEY",
+      "prefixes": [
+        "volcengine"
+      ]
+    },
+    {
+      "id": "voyage-ai",
+      "name": "Voyage AI",
+      "base_url": "https://api.voyage-ai.com/v1",
+      "env_key": "VOYAGE_AI_API_KEY",
+      "prefixes": [
+        "voyage-ai"
+      ]
+    },
+    {
+      "id": "wafer",
+      "name": "Wafer AI",
+      "base_url": "https://api.wafer.com/v1",
+      "env_key": "WAFER_API_KEY",
+      "prefixes": [
+        "wafer"
+      ]
+    },
+    {
+      "id": "wandb",
+      "name": "Weights & Biases Inference",
+      "base_url": "https://api.wandb.com/v1",
+      "env_key": "WANDB_API_KEY",
+      "prefixes": [
+        "wandb"
+      ]
+    },
+    {
+      "id": "watsonx",
+      "name": "IBM watsonx.ai Gateway",
+      "base_url": "https://api.watsonx.com/v1",
+      "env_key": "WATSONX_API_KEY",
+      "prefixes": [
+        "watsonx"
+      ]
+    },
+    {
+      "id": "xai",
+      "name": "xAI (Grok)",
+      "base_url": "https://api.xai.com/v1",
+      "env_key": "XAI_API_KEY",
+      "prefixes": [
+        "xai"
+      ]
+    },
+    {
+      "id": "xiaomi-mimo",
+      "name": "Xiaomi MiMo",
+      "base_url": "https://api.xiaomi-mimo.com/v1",
+      "env_key": "XIAOMI_MIMO_API_KEY",
+      "prefixes": [
+        "xiaomi-mimo"
+      ]
+    },
+    {
+      "id": "yi",
+      "name": "Yi (01.AI)",
+      "base_url": "https://api.yi.com/v1",
+      "env_key": "YI_API_KEY",
+      "prefixes": [
+        "yi"
+      ]
+    },
+    {
+      "id": "zai",
+      "name": "Z.AI",
+      "base_url": "https://api.zai.com/v1",
+      "env_key": "ZAI_API_KEY",
+      "prefixes": [
+        "zai"
+      ]
+    },
+    {
+      "id": "zenmux",
+      "name": "ZenMux",
+      "base_url": "https://api.zenmux.com/v1",
+      "env_key": "ZENMUX_API_KEY",
+      "prefixes": [
+        "zenmux"
+      ]
     }
   ]
 }

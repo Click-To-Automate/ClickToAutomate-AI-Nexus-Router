@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 
 type UsageMap = {
   [providerId: string]: { count: number; tokens_saved: number };
@@ -29,8 +30,8 @@ export function UsageLogs() {
   const fetchData = async () => {
     try {
       const [usageRes, keysRes] = await Promise.all([
-        fetch('http://localhost:20128/v1/usage'),
-        fetch('http://localhost:20128/v1/keys')
+        fetch(`${API_BASE}/v1/usage`),
+        fetch(`${API_BASE}/v1/keys`)
       ]);
       
       if (usageRes.ok) {

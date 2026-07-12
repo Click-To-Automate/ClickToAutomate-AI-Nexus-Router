@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 
 export function Compression() {
   const [settings, setSettings] = useState({
@@ -8,14 +9,14 @@ export function Compression() {
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:20128/v1/settings')
+    fetch(`${API_BASE}/v1/settings`)
       .then(r => r.json())
       .then(d => setSettings({ rtk_engine: d.rtk_engine || 'true', caveman_engine: d.caveman_engine || 'false' }))
       .catch(console.error);
   }, []);
 
   const saveSettings = () => {
-    fetch('http://localhost:20128/v1/settings', {
+    fetch(`${API_BASE}/v1/settings`, {
       method: 'POST',
       body: JSON.stringify(settings),
     }).then(() => {

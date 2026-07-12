@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 
 export function CacheViewer() {
   const [cacheEntries, setCacheEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchCache = () => {
-    fetch('http://localhost:20128/v1/cache')
+    fetch(`${API_BASE}/v1/cache`)
       .then(r => r.json())
       .then(d => {
         setCacheEntries(d.cache || []);
@@ -23,7 +24,7 @@ export function CacheViewer() {
 
   const clearCache = () => {
     if (!confirm('Are you sure you want to flush the semantic cache?')) return;
-    fetch('http://localhost:20128/v1/cache', { method: 'DELETE' })
+    fetch(`${API_BASE}/v1/cache`, { method: 'DELETE' })
       .then(() => fetchCache());
   };
 

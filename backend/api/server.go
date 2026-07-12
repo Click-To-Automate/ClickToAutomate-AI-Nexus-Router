@@ -23,14 +23,21 @@ func NewServer(frontendFS embed.FS) *http.ServeMux {
 	mux.HandleFunc("/v1/cache", handlers.HandleCache)
 	mux.HandleFunc("/v1/mcp", handlers.HandleMCP)
 
-	// Frontend Static Files
+	// Frontend Static Files (optional when Wails serves the UI)
 	publicFS, err := fs.Sub(frontendFS, "public")
 	if err != nil {
-		log.Fatalf("Failed to create sub filesystem: %v", err)
+		log.Printf("No embedded public assets (Wails mode): %v", err)
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path != "/" {
+				http.NotFound(w, r)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"status":"ok","service":"AI Nexus Router API"}`))
+		})
+		return mux
 	}
 	fileServer := http.FileServer(http.FS(publicFS))
-
-	// We route root to the static file server
 	mux.Handle("/", fileServer)
 
 	return mux

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 
 interface ProviderKey {
   provider_id: string;
@@ -85,8 +86,8 @@ export function ProvidersSettings() {
   const fetchData = async () => {
     try {
       const [keysRes, provRes] = await Promise.all([
-        fetch('http://localhost:20128/v1/keys'),
-        fetch('http://localhost:20128/v1/providers'),
+        fetch(`${API_BASE}/v1/keys`),
+        fetch(`${API_BASE}/v1/providers`),
       ]);
       const keysData = await keysRes.json();
       const provData = await provRes.json();
@@ -121,7 +122,7 @@ export function ProvidersSettings() {
 
   const fetchKeys = async () => {
     try {
-      const res = await fetch('http://localhost:20128/v1/keys');
+      const res = await fetch(`${API_BASE}/v1/keys`);
       const data = await res.json();
       setSavedKeys(data.keys || []);
     } catch (err) {
@@ -132,7 +133,7 @@ export function ProvidersSettings() {
   const handleAddKey = async () => {
     if (!selectedProvider || !newKeyInput) return;
     try {
-      await fetch('http://localhost:20128/v1/keys', {
+      await fetch(`${API_BASE}/v1/keys`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider_id: selectedProvider, api_key: newKeyInput, action: 'add' }),
@@ -147,7 +148,7 @@ export function ProvidersSettings() {
   const handleDeleteKey = async (apiKey: string) => {
     if (!selectedProvider) return;
     try {
-      await fetch('http://localhost:20128/v1/keys', {
+      await fetch(`${API_BASE}/v1/keys`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ provider_id: selectedProvider, api_key: apiKey, action: 'delete' }),

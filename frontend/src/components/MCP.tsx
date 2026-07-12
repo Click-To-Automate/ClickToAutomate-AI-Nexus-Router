@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 
 export function MCP() {
   const [data, setData] = useState<{allowed_commands: string[], allowed_dirs: string[]}>({ allowed_commands: [], allowed_dirs: [] });
@@ -7,7 +8,7 @@ export function MCP() {
   const [newDir, setNewDir] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:20128/v1/mcp')
+    fetch(`${API_BASE}/v1/mcp`)
       .then(r => r.json())
       .then(d => {
         setData({
@@ -20,7 +21,7 @@ export function MCP() {
 
   const saveSettings = (newData: any) => {
     setData(newData);
-    fetch('http://localhost:20128/v1/mcp', {
+    fetch(`${API_BASE}/v1/mcp`, {
       method: 'POST',
       body: JSON.stringify(newData)
     });

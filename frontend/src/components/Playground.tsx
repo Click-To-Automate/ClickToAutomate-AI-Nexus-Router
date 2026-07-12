@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE } from '../api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -79,7 +80,7 @@ export function Playground() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:20128/v1/models')
+    fetch(`${API_BASE}/v1/models`)
       .then(r => r.json())
       .then(d => {
         if(d.data) {
@@ -146,7 +147,7 @@ export function Playground() {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:20128/v1/chat/completions', {
+      const res = await fetch(`${API_BASE}/v1/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

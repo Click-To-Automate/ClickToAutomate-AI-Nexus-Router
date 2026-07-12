@@ -8,6 +8,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 
+	"ainexusrouter-core/apiport"
 	"ainexusrouter-core/server"
 )
 
@@ -18,12 +19,12 @@ func main() {
 	// Create an instance of the app structure
 	app := NewApp()
 	
-	// Start the backend API proxy in a goroutine so it serves on 20128
+	// Start the backend API proxy in a goroutine (dev: 20128, prod: via ldflags)
 	// while Wails handles the GUI natively
 	go func() {
 		// Provide an empty embed.FS to the server since Wails handles assets now
 		var emptyEmbed embed.FS
-		if err := server.RunServer("20128", emptyEmbed); err != nil {
+		if err := server.RunServer(apiport.Port, emptyEmbed); err != nil {
 			log.Fatalf("API Server crashed: %v", err)
 		}
 	}()

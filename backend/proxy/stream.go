@@ -74,34 +74,49 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 
 		hasImage := false
 			
-			if messages, ok := payload["messages"].([]interface{}); ok {
-				for j := len(messages) - 1; j >= 0; j-- {
-					if msg, ok := messages[j].(map[string]interface{}); ok {
-						if msg["role"] == "user" {
-							if contentStr, ok := msg["content"].(string); ok {
-								// Run it through the intelligent chunker
-								chunks := ChunkContent(contentStr)
+            if messages, ok := payload["messages"].([]interface{}); ok {
+			for j := len(messages) - 1; j >= 0; j-- {
+				if msg, ok := messages[j].(map[string]interface{}); ok {
+					if msg["role"] == "user" {
+						// Check if content is already an array (contains images)
+						if contentArray, ok := msg["content"].([]interface{}); ok {
+							// Message already contains structured content (likely images), skip compression
+							for _, contentItem := range contentArray {
+								if item, ok := contentItem.(map[string]interface{}); ok {
+									if item["type"] == "image_url" {
+										hasImage = true;
+									}
+								}
+							}
+							continue;
+						}
+						
+						// Handle plain text content
+						if contentStr, ok := msg["content"].(string); ok {
+							// Run it through the intelligent chunker
+							chunks := ChunkContent(contentStr)
 								
 								var newContent []map[string]interface{}
 								modified := false
 								
-								for _, chunk := range chunks {
-									// --- PHASE 1: TOON EXTRACTION PIPELINE ---
-									// If it's a massive JSON block, we attempt TOON extraction regardless of provider
-									if chunk.IsJSON && len(chunk.Text) > 2000 {
-										log.Printf("[TOON-Compressor] Detected massive JSON payload (%d chars). Attempting TOON extraction via Groq...", len(chunk.Text))
-										toonText, err := CompressToToon(chunk.Text)
-										if err == nil {
-											saved := (len(chunk.Text) / 4) - (len(toonText) / 4)
-											if saved > 0 {
-												totalSavedTokens += saved
-											}
-											log.Printf("[TOON-Compressor] Success! Shrunk JSON from %d chars to %d chars of TOON!", len(chunk.Text), len(toonText))
-											chunk.Text = toonText // Replace the raw JSON with TOON
-											modified = true
-										} else {
-											log.Printf("[TOON-Compressor] Extraction failed: %v", err)
+                                for _, chunk := range chunks {
+								// --- PHASE 1: TOON EXTRACTION PIPELINE ---
+								// If it's a massive JSON block, we attempt TOON extraction regardless of provider
+								// Skip TOON extraction if we already have images in the message
+								if !hasImage && chunk.IsJSON && len(chunk.Text) > 2000 {
+									log.Printf("[TOON-Compressor] Detected massive JSON payload (%d chars). Attempting TOON extraction via Groq...", len(chunk.Text))
+									toonText, err := CompressToToon(chunk.Text)
+									if err == nil {
+										saved := (len(chunk.Text) / 4) - (len(toonText) / 4)
+										if saved > 0 {
+											totalSavedTokens += saved
 										}
+										log.Printf("[TOON-Compressor] Success! Shrunk JSON from %d chars to %d chars of TOON!", len(chunk.Text), len(toonText))
+										chunk.Text = toonText // Replace the raw JSON with TOON
+										modified = true
+									} else {
+										log.Printf("[TOON-Compressor] Extraction failed: %v", err)
+									}
 									}
 
 									// --- PHASE 2: VISION COMPRESSION ENGINE ---
@@ -145,10 +160,16 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 				}
 			}
 			
-			// Ensure Mistral uses pixtral if we ended up rendering an image
-			if hasImage && route.Provider.Name == "mistral" {
-				payload["model"] = "pixtral-12b-2409"
-			}
+            // Ensure vision-capable providers use appropriate models when images are present
+				if hasImage {
+					if route.Provider.Name == "mistral" {
+						payload["model"] = "pixtral-12b-2409"
+					} else if route.Provider.Name == "groq" {
+						// Skip Groq if we have images, as it doesn't support vision
+						lastErr = fmt.Errorf("provider groq does not support image inputs")
+						continue
+					}
+				}
 
 		newBody, err := json.Marshal(payload)
 		if err != nil {

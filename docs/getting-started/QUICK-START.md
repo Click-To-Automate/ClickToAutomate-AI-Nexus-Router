@@ -80,7 +80,7 @@ You can also target any specific model from any configured provider. The router 
 - **Model**: `qwen/qwen3-27b`, `gemma-3-27b-it`, `mistral-large-latest`, etc.
 - **API Key**: `any-string`
 
-The router looks up the model in the live discovery map first, then falls back to prefix matching from `config/providers.json`.
+The router looks up the model in the live discovery map first, then falls back to prefix matching from the embedded provider catalog (`backend/config/providers.json`).
 
 ## 6. Using in Cursor / Other IDEs
 

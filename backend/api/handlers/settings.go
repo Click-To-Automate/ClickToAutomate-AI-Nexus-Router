@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"ainexusrouter-core/apiport"
 	"ainexusrouter-core/db"
 )
 
@@ -24,7 +25,7 @@ func HandleSettings(w http.ResponseWriter, r *http.Request) {
 			"rtk_engine":     db.GetSetting("rtk_engine", "true"),
 			"caveman_engine": db.GetSetting("caveman_engine", "false"),
 			"semantic_cache": db.GetSetting("semantic_cache", "false"),
-			"port":           db.GetSetting("port", "20128"),
+			"port":           db.GetSetting("port", apiport.Port),
 			"dark_mode":      db.GetSetting("dark_mode", "true"),
 		}
 		json.NewEncoder(w).Encode(settings)

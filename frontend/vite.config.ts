@@ -5,7 +5,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: '../backend/public',
+    // Wails embeds frontend/dist; backend standalone copies from there into public/
+    outDir: 'dist',
     emptyOutDir: true,
   }
 })

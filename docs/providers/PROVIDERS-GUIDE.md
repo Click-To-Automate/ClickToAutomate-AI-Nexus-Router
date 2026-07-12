@@ -14,7 +14,7 @@ When a request arrives, `GetProviderForModel()` first scans this map for an **ex
 
 ### Stage 2: Prefix Matching (Fallback)
 
-If no exact match is found in the discovery map (e.g., for providers without discoverable model lists), the router falls back to **prefix matching** against the `prefixes` array defined for each provider in `config/providers.json`:
+If no exact match is found in the discovery map (e.g., for providers without discoverable model lists), the router falls back to **prefix matching** against the `prefixes` array defined for each provider in the embedded `backend/config/providers.json`:
 
 ```json
 { "id": "groq", "prefixes": ["groq/", "llama", "gemma", "mixtral", "whisper"] }

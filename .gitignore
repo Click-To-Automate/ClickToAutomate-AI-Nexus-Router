@@ -25,6 +25,9 @@ build/
 !build/appicon.png
 !build/windows/
 
+# Release artifacts
+release/
+
 # OS / Editor
 .DS_Store
 Thumbs.db
@@ -35,3 +38,5 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+.cursor

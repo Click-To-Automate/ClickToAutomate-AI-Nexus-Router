@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
+import { API_BASE, API_PORT } from '../api';
 
 export function Settings() {
   const [settings, setSettings] = useState({
-    port: '20128',
+    port: API_PORT,
     dark_mode: 'true',
   });
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:20128/v1/settings')
+    fetch(`${API_BASE}/v1/settings`)
       .then(r => r.json())
-      .then(d => setSettings({ port: d.port || '20128', dark_mode: d.dark_mode || 'true' }))
+      .then(d => setSettings({ port: d.port || API_PORT, dark_mode: d.dark_mode || 'true' }))
       .catch(console.error);
   }, []);
 
   const saveSettings = () => {
-    fetch('http://localhost:20128/v1/settings', {
+    fetch(`${API_BASE}/v1/settings`, {
       method: 'POST',
       body: JSON.stringify(settings),
     }).then(() => {
@@ -42,7 +43,7 @@ export function Settings() {
             style={{ width: '100%' }}
           />
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-            The port this app listens on (default: 20128). Your IDEs (Cursor, Windsurf) must point to http://localhost:[port]/v1
+            The port this app listens on (default: {API_PORT}). Your IDEs (Cursor, Windsurf) must point to http://localhost:[port]/v1
           </p>
         </div>
 

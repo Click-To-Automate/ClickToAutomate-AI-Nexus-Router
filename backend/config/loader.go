@@ -1,10 +1,13 @@
 package config
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
-	"os"
 )
+
+//go:embed providers.json
+var embeddedProvidersJSON []byte
 
 type ProviderDef struct {
 	ID       string   `json:"id"`
@@ -21,16 +24,10 @@ type ProviderConfig struct {
 
 var GlobalConfig ProviderConfig
 
-// LoadProviders parses the providers.json file into memory
-func LoadProviders(filePath string) error {
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to read providers config file: %v", err)
+// LoadProviders loads the provider list from the JSON embedded in the binary.
+func LoadProviders() error {
+	if err := json.Unmarshal(embeddedProvidersJSON, &GlobalConfig); err != nil {
+		return fmt.Errorf("failed to parse embedded providers config: %v", err)
 	}
-
-	if err := json.Unmarshal(data, &GlobalConfig); err != nil {
-		return fmt.Errorf("failed to parse providers config file: %v", err)
-	}
-
 	return nil
 }
