@@ -1,64 +1,118 @@
 # Core Technologies
 
-**ClickToAutomate AI Nexus Router** uses two core components to execute an efficient LLM cascade: **RTK + Caveman Stacked Compression** (to reduce token size) and **Lagrangian Dual Decomposition** (to decide which model gets the request). [1, 2, 3] 
+The **CTA AI Nexus Router** is built on three core technical pillars:
 
-Here is a breakdown of how both technologies function within the router.
-
----
-
-## Part 1: RTK + Caveman Stacked Compression (The Token Reducer)
-
-When running coding assistants or cascading pipelines, your prompts contain two different types of text: noisy machine code (logs, errors, terminals) and human-written conversational context. [3, 4] 
-
-Instead of using one generic compressor, the AI Nexus Router feeds the prompt through a stacked pipeline where two specialized algorithmic engines run sequentially to compress data by 15% to 95%. [2, 3] 
-
-Raw Multi-Modal Prompt ──> [ 1. RTK Engine ] ──> [ 2. Caveman Engine ] ──> Compressed Prompt 
-                        (Strips terminal logs)   (Condenses human prose)   (78% - 94% tokens saved)
-
-### Step 1: The RTK Engine (Command & Terminal Filter) [3] 
-
-* **What it targets**: Machine-generated outputs such as terminal logs, build scripts, package manager noise, stack traces, Git diffs, and Docker container outputs. [3] 
-* **How it works**: It acts as an AST (Abstract Syntax Tree) and heuristic parser. It recognizes the structures of known terminal commands and strips out redundant strings, repetitive padding lines, and non-essential trace data while leaving the core error or structural payload intact. [3, 5] 
-* **Savings**: It yields roughly 60% to 90% savings on raw terminal outputs. [3] 
-
-### Step 2: The Caveman Engine (Natural Language Condenser)
-
-* **What it targets**: The remaining human conversational prose, assistant histories, and instructions.
-* **How it works**: It applies programmatic textual compression rules to strip conversational fluff. It eliminates stop-words, filler language, and redundant grammatical clauses, leaving the text looking like basic, blunt "caveman speech" that an LLM can still interpret with 100% semantic accuracy.
-* **Savings**: It yields roughly 46% savings on standard natural language. [4, 6, 7, 8] 
-
-### The Cumulative "Stacked" Effect
-
-By chaining them together (RTK -> Caveman), machine output is cleaned first, followed by prose condensation. Mathematically, the AI Nexus Router calculates the combined pipeline efficiency as:
-
-$$\text{Total Savings} = 1 - (1 - 0.80_{\text{RTK}}) \times (1 - 0.46_{\text{Caveman}}) \approx 89.2\% \text{ saved tokens}$$ 
-[3, 4, 8] 
+1. **RTK + Caveman Stacked Compression** — minimizes token costs before sending to providers
+2. **Lagrangian Dual Decomposition** — picks the mathematically optimal provider for every request
+3. **Dynamic Model Discovery** — keeps the router current with live provider model catalogs
 
 ---
 
-## Part 2: Lagrangian Dual Decomposition (The Intelligent Router)
+## Part 1: RTK + Caveman Stacked Compression (Token Reducer)
 
-Once the prompt is compressed, the AI Nexus Router must choose the best model cascade (e.g., Llama 8B or a frontier model). It models this routing dilemma as a constrained optimization problem rather than using simple rule-based forwarding. [1, 9] 
+When running coding assistants or agentic pipelines, prompts contain two very different types of content: machine-generated outputs (logs, traces, JSON payloads) and human-written conversational context.
 
-### The Problem (The Primal Problem)
+Instead of a single generic compressor, the AI Nexus Router feeds prompts through a **two-phase pipeline** running sequentially in `proxy/stream.go`:
 
-You want to serve an AI query while balancing conflicting realities:
-1. **Minimize Cost & Latency**: Use the absolute cheapest/fastest model possible.
-2. **Maximize Quality (Performance Constraints)**: Ensure the model chosen is smart enough to handle the prompt accurately.
-3. **Capacity Constraints**: Keep track of rate limits and token quotas across multiple providers. [1, 2, 9] 
+```
+Raw Prompt
+    │
+    ▼
+[ Phase 1: TOON Extraction ]  ─── Groq llama-3.1-8b-instant
+    │         Strips JSON → compact tabular TOON notation
+    ▼
+[ Phase 2: Vision Compression ]  ─── gg canvas library → Base64 PNG
+              Renders large prose/context to image tiles
+    │
+    ▼
+Compressed Payload → Upstream Provider
+```
 
-Solving this globally for thousands of fast-moving API requests simultaneously is mathematically complex (NP-hard). [10] 
+### Phase 1: TOON Extraction (Terminal/Structured Output Filter)
 
-### The Solution: Lagrangian Dual Decomposition [11] 
+- **Target**: Machine-generated content — large JSON blobs, API responses, database payloads
+- **Mechanism**: Detected via `json.Valid()` during content chunking. Chunks over 2,000 chars are sent to `llama-3.1-8b-instant` with a system prompt that aggressively flattens the structure into **Token-Oriented Object Notation (TOON)**
+- **Result**: 77–83% reduction on structured data
 
-The AI Nexus Router utilizes Lagrangian Duality to turn this hard problem inside out. [1] 
+### Phase 2: Vision Compression Engine (Natural Language / Context Reducer)
 
-1. **Relaxing Constraints via Multipliers ($\lambda$)**: The framework takes your hard constraints (like "Quality must be higher than 85%" or "Do not exceed a 10-cent budget") and converts them into soft penalties using mathematical variables called Lagrange multipliers. If a model configuration violates your rules, its penalty price skyrockets. [11, 12, 13] 
-2. **Decomposition (Splitting the Chunk)**: The "Decomposition" aspect means the master routing engine breaks one massive, complex network routing problem into independent, parallelized sub-problems. It evaluates each available model option individually and concurrently on separate processor cores. [10, 12] 
-3. **Adaptive Convergence**: The system utilizes a subgradient coordination loop. It dynamically tweaks the multipliers step-by-step based on live network feedback (e.g., if OpenAI suddenly throttles your rate limit, the multiplier penalty for OpenAI increases instantly). [1, 10, 11] 
+- **Target**: Large prose blocks and remaining context that exceeds the token cost threshold for vision
+- **Mechanism**: Uses Go's `gg` 2D graphics library to render text as high-contrast PNG images in memory. Forwarded as Base64 `image_url` content blocks to vision-capable providers (Anthropic, Gemini, OpenAI, Mistral)
+- **Result**: 93–97% reduction on large context payloads
 
-### Why This Matters for Your Cascade
+### Combined Savings
 
-Instead of randomly guessing if Llama 8B can handle a prompt, the AI Nexus Router predicts the query's complexity. If the Lagrangian optimization determines that a cheap model can safely meet your quality threshold, it routes it there. If the prompt is too dense, it elevates it to a higher tier. [1, 6, 9] 
+By chaining both phases, the cumulative savings on a mixed prompt (JSON + prose) can exceed 95%:
 
-This optimization technique achieves over a 10% reduction in API compute costs while boosting total response accuracy. [1] 
+$$\text{Total Savings} \approx 1 - (1 - 0.80_{\text{TOON}}) \times (1 - 0.95_{\text{Vision}}) \approx 99\%$$
+
+> **Note**: Code blocks (```` ``` ````) are always preserved verbatim (`FidelityRequired = true`) and never subjected to lossy compression.
+
+---
+
+## Part 2: Lagrangian Dual Decomposition (Intelligent Router)
+
+Once the payload is compressed, the router must choose the best provider. It models this as a **constrained optimization problem** rather than using brittle rule-based forwarding.
+
+### The Problem
+
+Every request has three competing objectives:
+1. **Minimize Cost + Latency**: Use the cheapest/fastest provider available
+2. **Satisfy Quality Constraint**: The chosen provider must be capable enough for the prompt's complexity
+3. **Avoid Penalized Providers**: Providers that recently failed (rate limits, errors) should be deprioritized
+
+### The Solution: Lagrangian Objective Function
+
+For each available provider, the solver computes:
+
+$$L(x, \lambda) = \text{Cost}(x) + \text{Latency}(x) + \lambda \cdot \max(0, q_{min} - \text{Quality}(x))$$
+
+- **$q_{min}$**: The minimum quality threshold, derived from the prompt's complexity score (0.0–1.0)
+- **$\lambda$** (Lagrange multiplier): A penalty value that spikes when a provider returns errors and decays over time, automatically routing traffic away from congested or failing endpoints
+- Providers are sorted by ascending $L$ score, producing the optimal cascade order
+
+### Self-Healing via Multiplier Updates
+
+When a provider returns `429`, `413`, or `5xx`, `IncrementPenalty(providerID)` spikes the $\lambda$ for that provider. The effect is immediate: the next request will mathematically deprioritize it, creating a self-healing load distribution without any manual intervention.
+
+---
+
+## Part 3: Dynamic Model Discovery
+
+Providers constantly add and deprecate models. Hardcoded model strings break silently.
+
+At startup, `discovery.RunDiscovery()` pings `GET /v1/models` for every provider with a configured API key. Live models are stored in `discovery.ProviderModels` (a `sync.RWMutex`-guarded concurrent map).
+
+When the router needs to select a model for a provider (e.g., "give me an 8B model on Groq"), it calls:
+```go
+discovery.GetBestModel("groq", "8b", "llama3-8b-8192")
+```
+
+This returns the best live match from the discovered catalog, falling back to the hardcoded default only if discovery failed for that provider.
+
+---
+
+## Part 4: Frontend — React + Vite Dashboard
+
+The frontend is a React + TypeScript application built with Vite, embedded directly into the Go binary at compile time.
+
+Key UI features:
+- **Connections** page: Browse 158+ providers with dynamic filters (Integration Type, Pricing, Account requirement), search, and multi-key management
+- **Playground**: Full ChatGPT-like interface with model dropdown, chat history (localStorage-backed), Memory toggle + sidebar, and `<think>` tag rendering (collapsible reasoning accordion with Markdown support inside)
+- **Analytics**: Live telemetry charts for per-provider request counts and cumulative tokens saved
+- **Semantic Cache**: View and purge all cached prompt/response pairs
+- **Compression**: Dashboard for viewing compression activity and saved tokens
+- **MCP**: Model Context Protocol tool bridge configuration
+
+---
+
+## Part 5: Database Schema (SQLite — `db/client.go`)
+
+The router uses `modernc.org/sqlite` (pure Go, no CGO) for all persistent state. The database lives at `Documents/.cta-ai-nexus/router.db`.
+
+| Table | Schema | Purpose |
+|-------|--------|---------|
+| `provider_keys_multi` | `(id, provider_id, api_key, UNIQUE(provider_id, api_key))` | Multi-key storage with automatic load balancing via `ORDER BY RANDOM()` |
+| `usage_stats` | `(provider_id, request_count, tokens_saved)` | Telemetry data per provider |
+| `app_settings` | `(key, value)` | Key-value config store |
+| `semantic_cache` | `(hash, prompt, response, tokens_saved, created_at)` | SHA-256 prompt → response cache |

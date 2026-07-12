@@ -11,9 +11,10 @@ import (
 )
 
 type ResolvedProvider struct {
-	Name    string
-	BaseURL string
-	APIKey  string
+	Name     string
+	BaseURL  string
+	APIKey   string
+	AuthType string // "bearer" | "cookie" | "oauth" | "bearer_token"
 }
 
 // GetProviderForModel determines which provider to use based on the model name
@@ -32,9 +33,10 @@ func GetProviderForModel(model string) (*ResolvedProvider, error) {
 							key = os.Getenv(p.EnvKey)
 						}
 						return &ResolvedProvider{
-							Name:    p.ID,
-							BaseURL: p.BaseURL,
-							APIKey:  key,
+							Name:     p.ID,
+							BaseURL:  p.BaseURL,
+							APIKey:   key,
+							AuthType: p.AuthType,
 						}, nil
 					}
 				}
@@ -57,9 +59,10 @@ func GetProviderForModel(model string) (*ResolvedProvider, error) {
 				// Strip aggregator prefixes if needed (e.g. "openrouter/llama" -> "llama")
 				// We will handle actual model translation in the proxy layer if needed.
 				return &ResolvedProvider{
-					Name:    p.ID,
-					BaseURL: p.BaseURL,
-					APIKey:  key,
+					Name:     p.ID,
+					BaseURL:  p.BaseURL,
+					APIKey:   key,
+					AuthType: p.AuthType,
 				}, nil
 			}
 		}
@@ -130,9 +133,10 @@ func GetSmartRoutes(complexity float64) ([]SmartRoute, error) {
 				bestModel := discovery.GetBestModel(p.ID, keyword, fallback)
 				routes = append(routes, SmartRoute{
 					Provider: ResolvedProvider{
-						Name:    p.ID,
-						BaseURL: p.BaseURL,
-						APIKey:  key,
+						Name:     p.ID,
+						BaseURL:  p.BaseURL,
+						APIKey:   key,
+						AuthType: p.AuthType,
 					},
 					ActualModel: bestModel,
 				})

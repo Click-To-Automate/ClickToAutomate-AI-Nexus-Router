@@ -1,37 +1,77 @@
-# Lagrangian Routing & Subgradient Fallbacks
+# Smart Routing: Lagrangian Dual Decomposition
 
-The **ClickToAutomate AI Nexus Router** removes the burden of manually selecting LLM models. It uses **Lagrangian Dual Decomposition** to calculate the absolute mathematically optimal route for every single request, dynamically balancing cost, latency, and quality.
+The **CTA AI Nexus Router** removes the burden of manually selecting LLM providers. When you set `model: "cta-ai-nexus"`, the router uses **Lagrangian Dual Decomposition** to build a mathematically optimal, ordered fallback chain for every request — dynamically balancing cost, latency, and quality against your prompt's complexity.
 
-## 1. Complexity Scoring (`intent.go`)
+## 1. Complexity Scoring (`proxy/intent.go`)
 
-When a request arrives, `AnalyzeComplexity()` scans the concatenated prompt text and calculates a rigorous mathematical complexity score between `0.0` and `1.0`.
+When a request arrives, `AnalyzeComplexity(messages)` scans the concatenated prompt text and computes a rigorous complexity score between `0.0` and `1.0`.
 
-- **Simple Context**: A baseline task yields a score of `0.5`.
-- **Complex Code**: Finding tokens like `function`, `class`, or `error:` increases the required complexity score to `0.8+`.
-- **Massive Payload**: A prompt with >10,000 tokens instantly triggers a `0.95` complexity constraint.
+| Signal | Score Adjustment |
+|--------|-----------------|
+| Baseline (every request) | `+0.5` |
+| Code keywords: `function`, `class`, `def`, `error:`, `exception`, `=>` | `+0.05` each |
+| Massive payload (>10,000 tokens) | Forces `≥ 0.95` |
+| Math/reasoning keywords: `prove`, `theorem`, `integral` | `+0.05` each |
 
-This score acts as the minimum **Quality Constraint ($q_{min}$)** for the mathematical solver.
+This score becomes the minimum **Quality Constraint** ($q_{min}$) fed into the Lagrangian solver.
 
-## 2. The Lagrangian Solver (`lagrangian.go`)
+## 2. Lagrangian Dual Decomposition Solver (`providers/lagrangian.go`)
 
-Based on the complexity constraint, the router builds a mathematically sorted fallback chain of available providers.
+The router models provider selection as a constrained optimization problem. For each available provider:
 
-1. **Intrinsic Constraints**: Each model family (e.g., LLaMA 8B vs GPT-4o) has hardcoded baseline `Cost`, `Latency`, and `Quality` scores.
-2. **Objective Function**: The solver calculates $L(x, \lambda)$ for every available model. It attempts to minimize Cost + Latency, while strictly penalizing models whose `Quality` falls below the task's `ComplexityScore`.
-3. **Multiplier Adjustments ($\lambda$)**: The solver applies live Lagrange Multipliers (penalties) for each provider.
+$$L(x, \lambda) = \text{Cost}(x) + \text{Latency}(x) + \lambda \cdot \max(0, q_{min} - \text{Quality}(x))$$
 
-## 3. Subgradient Coordination Loop (`stream.go`)
+Where:
+- **Cost** and **Latency** are hardcoded baseline scores per provider (e.g., Cerebras = very low, GPT-4o = very high)
+- **Quality** is a baseline capability score per provider (e.g., Cerebras = `0.7`, GPT-4o = `1.0`)
+- **$\lambda$** is the current Lagrange multiplier (penalty) for that provider — spiked on errors, decayed over time
 
-The AI Nexus Router is fully self-healing.
+The solver evaluates all available providers and sorts them by ascending Lagrangian score, producing the optimal fallback chain.
 
-If the solver chooses Anthropic, but Anthropic returns a `429 Too Many Requests` or `413 Payload Too Large`, the router catches the error instantly.
+## 3. Route Construction (`providers/registry.go`)
 
-- **Zero Interruption**: The proxy silently cascades to the next best model mathematically sorted by the solver.
-- **Feedback Loop**: It instantly fires `IncrementPenalty(provider)` to spike the Lagrange multiplier for Anthropic. The next request to hit the router will see Anthropic's objective score severely penalized, forcing the decomposition solver to route traffic away from the congested provider until the penalties eventually decay.
+`GetSmartRoutes(complexity)` performs three steps:
 
-## Dynamic Model Discovery (`discovery.go`)
+**Step 1** — Enumerate all providers with configured API keys (from `provider_keys_multi` table or env vars).
 
-Providers constantly deprecate models. To ensure the solver never attempts to hit a dead endpoint:
-- On `wails dev` or executable launch, the router queries the `GET /v1/models` endpoint for your providers.
-- It caches the *live* list of currently supported models in memory.
-- When the solver picks a target (e.g., "give me an 8B model on Groq"), it uses `discovery.GetBestModel("groq", "8b")` to dynamically retrieve the active model string rather than relying on brittle hardcoded strings.
+**Step 2** — Run `CalculateOptimalRoutes(complexity, availableProviders)` to get the Lagrangian-sorted order.
+
+**Step 3** — Map each provider to the best available model using `discovery.GetBestModel()`:
+
+| Complexity | Tier Selected | Example |
+|------------|---------------|---------|
+| `>= 0.8` (Complex) | High-tier models | Groq `70b`, Anthropic `sonnet`, Gemini `pro`, Mistral `large`, OpenAI `4o` |
+| `< 0.8` (Simple) | Efficient models | Groq `8b`, Cerebras `8b`, Gemini `flash`, OpenAI `mini` |
+
+The `GetBestModel(providerID, keyword, fallback)` function searches the live discovery map for a model containing `keyword`, falling back to a hardcoded string if the provider wasn't successfully discovered at startup.
+
+## 4. Dynamic Model Discovery (`discovery/discovery.go`)
+
+Providers constantly deprecate models and add new ones. The router never relies on hardcoded model strings when it doesn't have to.
+
+At startup, `RunDiscovery()` concurrently pings `GET /v1/models` for every configured provider:
+- Results are parsed from OpenAI format (`{"data": [{"id": "..."}]}`) or Google format (`{"models": [{"name": "models/..."}]}`)
+- Non-chat models (embeddings, TTS, Whisper, OCR) are filtered out via `isChatModel()`
+- Live models are stored in `discovery.ProviderModels` (a concurrent-safe `sync.RWMutex`-guarded map)
+- When routing, `GetBestModel()` queries this live map rather than using brittle hardcoded strings
+
+## 5. Self-Healing Cascade (`proxy/stream.go`)
+
+The router is fully fault-tolerant:
+
+1. The Lagrangian solver produces an ordered route chain (e.g., `Groq → Mistral → Anthropic → Gemini`).
+2. The proxy tries each route sequentially.
+3. On any cascade-triggering error (see Providers Guide), it calls `IncrementPenalty(providerID)`.
+4. **Penalty Effect**: The spiked $\lambda$ multiplier for that provider means the next request will mathematically deprioritize it — routing traffic away from the congested provider until penalties decay.
+5. The cascade continues until a route succeeds or all routes are exhausted (returns `502 Bad Gateway`).
+
+```
+Request → Groq [429 → Penalty↑] → Mistral [Success ✅] → Response
+                                    ↓ telemetry logged to SQLite
+```
+
+## 6. Semantic Cache (Compression Layer)
+
+Before hitting any provider, the `chat.go` handler checks the `semantic_cache` SQLite table for a matching SHA-256 hash of the prompt. On a cache hit, the response is returned instantly with zero upstream API cost.
+
+Cache entries are viewable and purgeable from the **Semantic Cache** page in the dashboard.

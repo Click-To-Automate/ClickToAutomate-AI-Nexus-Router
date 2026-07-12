@@ -11,6 +11,7 @@ type ProviderDef struct {
 	Name     string   `json:"name"`
 	BaseURL  string   `json:"base_url"`
 	EnvKey   string   `json:"env_key"`
+	AuthType string   `json:"auth_type"` // "bearer" | "cookie" | "oauth" | "bearer_token"
 	Prefixes []string `json:"prefixes"`
 }
 

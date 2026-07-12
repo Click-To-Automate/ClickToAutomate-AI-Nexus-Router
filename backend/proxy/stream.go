@@ -170,7 +170,22 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 		}
 
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
+
+		// Set the correct Authorization header based on provider auth type
+		switch route.Provider.AuthType {
+		case "cookie":
+			// Web cookie providers: pass the stored value as the Cookie header
+			req.Header.Set("Cookie", route.Provider.APIKey)
+		case "oauth":
+			// OAuth providers: pass the token as Bearer (OAuth tokens are used as Bearer)
+			req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
+		case "bearer_token":
+			// Providers that use Authorization: Bearer with a non-API-key token (e.g. userToken from localStorage)
+			req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
+		default:
+			// Standard API key via Authorization: Bearer
+			req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
+		}
 
 		if i == 0 {
 			// Only set CORS headers once

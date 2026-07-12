@@ -5,6 +5,7 @@
       "name": "OpenAI",
       "base_url": "https://api.openai.com/v1",
       "env_key": "OPENAI_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["gpt-", "o1-", "o3-"]
     },
     {
@@ -12,6 +13,7 @@
       "name": "Anthropic",
       "base_url": "https://api.anthropic.com/v1",
       "env_key": "ANTHROPIC_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["claude-"]
     },
     {
@@ -19,6 +21,7 @@
       "name": "Google Gemini",
       "base_url": "https://generativelanguage.googleapis.com/v1beta",
       "env_key": "GEMINI_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["gemini-"]
     },
     {
@@ -26,6 +29,7 @@
       "name": "Groq",
       "base_url": "https://api.groq.com/openai/v1",
       "env_key": "GROQ_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["groq/", "llama3-", "mixtral-"]
     },
     {
@@ -33,6 +37,7 @@
       "name": "OpenRouter",
       "base_url": "https://openrouter.ai/api/v1",
       "env_key": "OPENROUTER_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["openrouter/"]
     },
     {
@@ -40,6 +45,7 @@
       "name": "Together AI",
       "base_url": "https://api.together.xyz/v1",
       "env_key": "TOGETHER_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["together/"]
     },
     {
@@ -47,13 +53,15 @@
       "name": "Ollama (Local)",
       "base_url": "http://localhost:11434/v1",
       "env_key": "",
+      "auth_type": "bearer",
       "prefixes": ["ollama/"]
     },
     {
       "id": "mistral",
-      "name": "Mistral (Free Tier)",
+      "name": "Mistral",
       "base_url": "https://api.mistral.ai/v1",
       "env_key": "MISTRAL_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["mistral/", "mistral-"]
     },
     {
@@ -61,6 +69,7 @@
       "name": "Cerebras",
       "base_url": "https://api.cerebras.ai/v1",
       "env_key": "CEREBRAS_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["cerebras/"]
     },
     {
@@ -68,6 +77,7 @@
       "name": "GitHub Models",
       "base_url": "https://models.inference.ai.azure.com",
       "env_key": "GITHUB_TOKEN",
+      "auth_type": "bearer",
       "prefixes": ["github/"]
     },
     {
@@ -75,6 +85,7 @@
       "name": "SambaNova",
       "base_url": "https://api.sambanova.ai/v1",
       "env_key": "SAMBANOVA_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["sambanova/"]
     },
     {
@@ -82,7 +93,64 @@
       "name": "DeepSeek",
       "base_url": "https://api.deepseek.com/v1",
       "env_key": "DEEPSEEK_API_KEY",
+      "auth_type": "bearer",
       "prefixes": ["deepseek/"]
+    },
+    {
+      "id": "deepseek-web",
+      "name": "DeepSeek Web",
+      "base_url": "https://chat.deepseek.com/api/v0",
+      "env_key": "",
+      "auth_type": "bearer_token",
+      "prefixes": ["deepseek-web/"]
+    },
+    {
+      "id": "gemini-web",
+      "name": "Gemini Web",
+      "base_url": "https://aistudio.googleapis.com/v1",
+      "env_key": "",
+      "auth_type": "cookie",
+      "prefixes": ["gemini-web/"]
+    },
+    {
+      "id": "claude-web",
+      "name": "Claude Web",
+      "base_url": "https://claude.ai/api",
+      "env_key": "",
+      "auth_type": "cookie",
+      "prefixes": ["claude-web/"]
+    },
+    {
+      "id": "qwen-web",
+      "name": "Qwen Web",
+      "base_url": "https://chat.qwen.ai/api",
+      "env_key": "",
+      "auth_type": "bearer_token",
+      "prefixes": ["qwen-web/"]
+    },
+    {
+      "id": "github",
+      "name": "GitHub Copilot",
+      "base_url": "https://api.githubcopilot.com",
+      "env_key": "GITHUB_COPILOT_TOKEN",
+      "auth_type": "oauth",
+      "prefixes": ["github-copilot/"]
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor IDE",
+      "base_url": "https://api2.cursor.sh/v1",
+      "env_key": "",
+      "auth_type": "oauth",
+      "prefixes": ["cursor/"]
+    },
+    {
+      "id": "llm7",
+      "name": "LLM7",
+      "base_url": "https://api.llm7.io/v1",
+      "env_key": "",
+      "auth_type": "bearer",
+      "prefixes": ["llm7/"]
     }
   ]
 }
