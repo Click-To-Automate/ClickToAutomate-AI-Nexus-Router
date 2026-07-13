@@ -943,10 +943,36 @@
         {
             "id": "nvidia",
             "name": "NVIDIA NIM",
-            "base_url": "https://api.nvidia.com/v1",
+            "base_url": "https://integrate.api.nvidia.com/v1",
             "env_key": "NVIDIA_API_KEY",
             "prefixes": [
-                "nvidia"
+                "abacusai",
+                "arc",
+                "baai",
+                "baidu",
+                "black-forest-labs",
+                "bytedance",
+                "colabfold",
+                "deepmind",
+                "deepseek-ai",
+                "google",
+                "ipd",
+                "meta",
+                "microsoft",
+                "minimaxai",
+                "mistralai",
+                "mit",
+                "nvidia",
+                "openai",
+                "openfold",
+                "qwen",
+                "resembleai",
+                "sarvamai",
+                "stabilityai",
+                "stepfun-ai",
+                "stockmark",
+                "upstage",
+                "z-ai"
             ]
         },
         {
