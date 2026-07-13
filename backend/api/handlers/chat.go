@@ -54,15 +54,15 @@ func HandleChatCompletions(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type ProviderGroup struct {
-	ProviderID   string   `json:"provider_id"`
-	ProviderName string   `json:"provider_name"`
-	Models       []string `json:"models"`
+type OpenAIModel struct {
+	Id      string `json:"id"`
+	Object  string `json:"object"`
+	OwnedBy string `json:"owned_by"`
 }
 
 type ModelsResponse struct {
-	Object string          `json:"object"`
-	Data   []ProviderGroup `json:"data"`
+	Object string        `json:"object"`
+	Data   []OpenAIModel `json:"data"`
 }
 
 func HandleModels(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +70,7 @@ func HandleModels(w http.ResponseWriter, r *http.Request) {
 	
 	resp := ModelsResponse{
 		Object: "list",
-		Data:   []ProviderGroup{},
+		Data:   []OpenAIModel{},
 	}
 
 	activeKeys := make(map[string]bool)
@@ -95,15 +95,17 @@ func HandleModels(w http.ResponseWriter, r *http.Request) {
 
 		models, ok := discovery.ProviderModels[p.ID]
 		if !ok || len(models) == 0 {
-			// Fallback if discovery is pending or failed (e.g. invalid key)
+			// Fallback if discovery is pending or failed
 			models = []string{p.ID + "-default", p.ID + "-advanced"}
 		}
 		
-		resp.Data = append(resp.Data, ProviderGroup{
-			ProviderID:   p.ID,
-			ProviderName: p.Name,
-			Models:       models,
-		})
+		for _, m := range models {
+			resp.Data = append(resp.Data, OpenAIModel{
+				Id:      m,
+				Object:  "model",
+				OwnedBy: p.ID, // We inject provider_id here so the frontend can group them
+			})
+		}
 	}
 	discovery.Mu.RUnlock()
 

@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"ainexusrouter-core/config"
 	"ainexusrouter-core/db"
@@ -35,9 +36,15 @@ var Mu sync.RWMutex
 func RunDiscovery() {
 	log.Println("[Discovery] Initiating Dynamic Model Discovery...")
 	
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
 
 	for _, p := range config.GlobalConfig.Providers {
+		if p.RequiresCustomURL {
+			continue // Skip providers requiring custom client-injected URLs
+		}
+		
 		key := db.GetKey(p.ID)
 		if key == "" && p.EnvKey != "" {
 			key = os.Getenv(p.EnvKey)

@@ -84,13 +84,24 @@ export function Playground() {
       .then(r => r.json())
       .then(d => {
         if(d.data) {
-          setProviderGroups(d.data);
           const map: Record<string, string> = {'cta-ai-nexus': 'Smart Routing'};
-          d.data.forEach((p: ProviderGroup) => {
-            p.models.forEach(m => {
-              map[m] = m;
-            });
+          const grouped: Record<string, ProviderGroup> = {};
+          
+          // Parse OpenAI standard model list and group by owned_by
+          d.data.forEach((m: any) => {
+            const pid = m.owned_by || 'unknown';
+            if (!grouped[pid]) {
+              grouped[pid] = {
+                provider_id: pid,
+                provider_name: pid.charAt(0).toUpperCase() + pid.slice(1),
+                models: []
+              };
+            }
+            grouped[pid].models.push(m.id);
+            map[m.id] = m.id;
           });
+          
+          setProviderGroups(Object.values(grouped));
           setModelNameMap(map);
         }
       })

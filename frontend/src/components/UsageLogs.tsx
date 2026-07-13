@@ -125,7 +125,14 @@ export function UsageLogs() {
                   
                   <div className="provider-card-header">
                     <div className="provider-card-avatar">
-                      <img src={`/providers/${providerId}.png`} alt={meta.name} />
+                      <img 
+                        src={`/providers/${providerId}.png`} 
+                        alt={meta.name} 
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='${encodeURIComponent(meta.color)}' rx='18'/><text x='50' y='62' font-family='Arial' font-size='46' font-weight='bold' fill='white' text-anchor='middle'>${meta.name.charAt(0).toUpperCase()}</text></svg>`;
+                        }}
+                      />
                     </div>
                     {isGrid && (
                       <span className="badge" style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>

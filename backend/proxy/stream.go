@@ -13,16 +13,23 @@ import (
 	"ainexusrouter-core/providers"
 )
 
+// sanitizeImageURL has been moved to sanitizer.go
+
 // HandleProxyRequest proxies the request to the upstream provider
 func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, model string, stream bool) error {
 	var routes []providers.SmartRoute
 
-	// We unmarshal early to allow intent analysis
+	// We unmarshal early to allow intent analysis and global sanitization
 	var payload map[string]interface{}
 	if err := json.Unmarshal(body, &payload); err != nil {
 		http.Error(w, "Failed to parse JSON body", http.StatusBadRequest)
 		return err
 	}
+
+	// 0. Global Input Sanitization Pipeline
+	// This cleans up proprietary fields (like "user", "providerOptions") and sanitizes images once,
+	// rather than evaluating the payload repeatedly inside the multi-route failover loop.
+	hasImage := GlobalSanitizeRequest(payload)
 
 	if model == "cta-ai-nexus" {
 		// 1. Extract messages array
@@ -65,30 +72,17 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 
 		// Map to correct model
 		payload["model"] = route.ActualModel
-		
-		// Sanitize payload: Many strict providers (like Mistral/Cerebras) reject the 'user' field that Cursor/Antigravity sends
-		delete(payload, "user")
 
 		// Context Compression Integration: Intelligent Hybrid Engine
 		isVisionProvider := route.Provider.Name == "anthropic" || route.Provider.Name == "gemini" || route.Provider.Name == "mistral" || route.Provider.Name == "openai"
 
-		hasImage := false
-			
-            if messages, ok := payload["messages"].([]interface{}); ok {
+		if messages, ok := payload["messages"].([]interface{}); ok {
 			for j := len(messages) - 1; j >= 0; j-- {
 				if msg, ok := messages[j].(map[string]interface{}); ok {
 					if msg["role"] == "user" {
 						// Check if content is already an array (contains images)
-						if contentArray, ok := msg["content"].([]interface{}); ok {
-							// Message already contains structured content (likely images), skip compression
-							for _, contentItem := range contentArray {
-								if item, ok := contentItem.(map[string]interface{}); ok {
-									if item["type"] == "image_url" {
-										hasImage = true;
-									}
-								}
-							}
-							continue;
+						if _, ok := msg["content"].([]interface{}); ok {
+							continue
 						}
 						
 						// Handle plain text content
@@ -96,10 +90,10 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 							// Run it through the intelligent chunker
 							chunks := ChunkContent(contentStr)
 								
-								var newContent []map[string]interface{}
-								modified := false
+							var newContent []map[string]interface{}
+							modified := false
 								
-                                for _, chunk := range chunks {
+							for _, chunk := range chunks {
 								// --- PHASE 1: TOON EXTRACTION PIPELINE ---
 								// If it's a massive JSON block, we attempt TOON extraction regardless of provider
 								// Skip TOON extraction if we already have images in the message
@@ -162,12 +156,25 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 			
             // Ensure vision-capable providers use appropriate models when images are present
 				if hasImage {
-					if route.Provider.Name == "mistral" {
-						payload["model"] = "pixtral-12b-2409"
-					} else if route.Provider.Name == "groq" {
+					// Override the model with a vision-capable one if the provider supports it
+					switch route.Provider.Name {
+					case "openai":
+						payload["model"] = "gpt-4o" // Vision-capable model
+					case "anthropic":
+						payload["model"] = "claude-3-5-sonnet-20240620" // Vision-capable model
+					case "mistral":
+						payload["model"] = "pixtral-12b-2409" // Vision-capable model
+					case "groq":
 						// Skip Groq if we have images, as it doesn't support vision
 						lastErr = fmt.Errorf("provider groq does not support image inputs")
 						continue
+					default:
+						// Fallback to a default vision-capable model if the provider supports it
+						if strings.Contains(route.ActualModel, "gpt") {
+							payload["model"] = "gpt-4o"
+						} else if strings.Contains(route.ActualModel, "claude") {
+							payload["model"] = "claude-3-5-sonnet-20240620"
+						}
 					}
 				}
 
@@ -178,8 +185,14 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 		}
 
 		var targetURL string
-		if route.Provider.Name == "openai" {
-			targetURL = route.Provider.BaseURL + "/chat/completions"
+		if route.Provider.RequiresCustomURL {
+			customURL := r.Header.Get("X-Custom-Base-Url")
+			if customURL == "" {
+				lastErr = fmt.Errorf("provider %s requires a custom base URL (pass via X-Custom-Base-Url header)", route.Provider.Name)
+				continue
+			}
+			customURL = strings.TrimSuffix(customURL, "/")
+			targetURL = customURL + "/chat/completions"
 		} else {
 			targetURL = route.Provider.BaseURL + "/chat/completions"
 		}

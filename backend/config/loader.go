@@ -10,12 +10,13 @@ import (
 var embeddedProvidersJSON []byte
 
 type ProviderDef struct {
-	ID       string   `json:"id"`
-	Name     string   `json:"name"`
-	BaseURL  string   `json:"base_url"`
-	EnvKey   string   `json:"env_key"`
-	AuthType string   `json:"auth_type"` // "bearer" | "cookie" | "oauth" | "bearer_token"
-	Prefixes []string `json:"prefixes"`
+	ID                string   `json:"id"`
+	Name              string   `json:"name"`
+	BaseURL           string   `json:"base_url"`
+	RequiresCustomURL bool     `json:"requires_custom_url"`
+	EnvKey            string   `json:"env_key"`
+	AuthType          string   `json:"auth_type"` // "bearer" | "cookie" | "oauth" | "bearer_token"
+	Prefixes          []string `json:"prefixes"`
 }
 
 type ProviderConfig struct {

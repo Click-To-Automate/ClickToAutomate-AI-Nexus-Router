@@ -99,7 +99,7 @@ export function ProvidersSettings() {
           id: p.id,
           name: meta.name || p.name || p.id,
           url: meta.url || p.base_url || 'https://example.com',
-          logo: meta.logo || LOGO(new URL(p.base_url || 'https://example.com').hostname),
+          logo: meta.logo || `/providers/${p.id}.png`,
           color: meta.color || '#6366f1',
           tier: meta.tier || 'API Key',
           models: meta.models || 'Dynamic',

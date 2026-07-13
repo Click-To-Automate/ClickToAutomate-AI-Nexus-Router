@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { ProvidersSettings } from './ProvidersSettings';
-import { UsageLogs } from './UsageLogs';
 import { Playground } from './Playground';
 import { Compression } from './Compression';
 import { CacheViewer } from './CacheViewer';
 import { MCP } from './MCP';
 import { Settings } from './Settings';
+import Logs from './Logs';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState('providers');
@@ -74,14 +74,14 @@ export function Dashboard() {
             <span className="nav-text">Semantic Cache</span>
           </div>
           
-          <div 
+          <div
             className={`nav-item ${activeTab === 'logs' ? 'active' : ''}`}
             onClick={() => setActiveTab('logs')}
           >
             <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
             </svg>
-            <span className="nav-text">Analytics</span>
+            <span className="nav-text">Logs</span>
           </div>
 
           <div 
@@ -130,7 +130,7 @@ export function Dashboard() {
         {activeTab === 'playground' && <Playground />}
         {activeTab === 'compression' && <Compression />}
         {activeTab === 'cache' && <CacheViewer />}
-        {activeTab === 'logs' && <UsageLogs />}
+        {activeTab === 'logs' && <Logs />}
         {activeTab === 'mcp' && <MCP />}
         {activeTab === 'settings' && <Settings />}
       </div>

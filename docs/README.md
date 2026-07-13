@@ -2,6 +2,13 @@
 
 Welcome to the documentation for the **CTA AI Nexus Router** — a high-performance, OpenAI-compatible proxy that slashes LLM API costs through intelligent routing, context compression, and semantic caching.
 
+## Release Notes
+
+### v1.0.0
+- Added **Logs section** to the dashboard for real-time backend monitoring.
+- Fixed **image processing** to support vision-capable models (e.g., `gpt-4o`, `claude-3.5-sonnet`).
+- Updated Wails build to include WebView2 runtime for Windows.
+
 ## Documentation Index
 
 ### Getting Started

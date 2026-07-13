@@ -14,6 +14,8 @@ By leveraging Go's single-binary compilation, users can download just one execut
 - **Wails Desktop App**: A seamless native desktop experience built with Wails, natively embedding the Go backend without the need for complex sidecar architectures.
 - **Smart Routing & Resilience**: Auto-fallback across multiple providers ensuring you never hit rate limits.
 - **One Endpoint for Every Tool**: Connect Claude Code, Codex, Cursor, and any OpenAI-compatible tool to a single local endpoint.
+- **Logs Section**: View real-time backend logs directly in the dashboard for debugging and monitoring.
+- **Image Processing**: Seamlessly analyze images alongside prompts using vision-capable models (e.g., `gpt-4o`, `claude-3.5-sonnet`).
 
 ## Getting Started
 
@@ -28,6 +30,23 @@ Launch the ClickToAutomate AI Nexus Router desktop app. The native GUI will auto
 - `/backend` - The Golang core handling API routes, provider management, and serving the embedded frontend.
 - `/frontend` - The React SPA (Single Page Application) dashboard.
 - `/` (Root) - The Wails desktop wrapper that directly compiles the Go backend and React frontend into a single native application.
+
+## Changelog
+
+### v1.0.0
+- Added **Logs section** to the dashboard for real-time backend monitoring.
+- Fixed **image processing** to support vision-capable models (e.g., `gpt-4o`, `claude-3.5-sonnet`).
+- Updated Wails build to include WebView2 runtime for Windows.
+
+## Build Instructions
+
+### Wails Build
+To build the desktop application for Windows, run:
+```bash
+wails build -clean -platform windows -webview2 embed
+```
+
+The executable will be available in the `build/bin` directory.
 
 ## Documentation
 
