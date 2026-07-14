@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Logs.css';
+import { API_BASE } from '../api';
 
 interface LogEntry {
   timestamp: string;
@@ -15,7 +16,7 @@ const Logs: React.FC = () => {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const response = await fetch('/v1/logs');
+        const response = await fetch(`${API_BASE}/v1/logs`);
         if (!response.ok) {
           throw new Error('Failed to fetch logs');
         }

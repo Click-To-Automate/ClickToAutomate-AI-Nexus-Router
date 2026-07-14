@@ -16,6 +16,7 @@ type UsageData struct {
 }
 
 var DB *sql.DB
+var DBPath string
 
 func InitDB(customDBPath string) error {
 	var dbPath string
@@ -38,6 +39,8 @@ func InitDB(customDBPath string) error {
 
 		dbPath = filepath.Join(appDir, "router.db")
 	}
+
+	DBPath = dbPath
 
 	// 2. Open SQLite database using modernc.org/sqlite
 	db, err := sql.Open("sqlite", dbPath)

@@ -6,6 +6,7 @@ import { CacheViewer } from './CacheViewer';
 import { MCP } from './MCP';
 import { Settings } from './Settings';
 import Logs from './Logs';
+import { UsageLogs } from './UsageLogs';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState('providers');
@@ -84,6 +85,18 @@ export function Dashboard() {
             <span className="nav-text">Logs</span>
           </div>
 
+          <div
+            className={`nav-item ${activeTab === 'usage' ? 'active' : ''}`}
+            onClick={() => setActiveTab('usage')}
+          >
+            <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            <span className="nav-text">Usage</span>
+          </div>
+
           <div 
             className={`nav-item ${activeTab === 'mcp' ? 'active' : ''}`}
             onClick={() => setActiveTab('mcp')}
@@ -131,6 +144,7 @@ export function Dashboard() {
         {activeTab === 'compression' && <Compression />}
         {activeTab === 'cache' && <CacheViewer />}
         {activeTab === 'logs' && <Logs />}
+        {activeTab === 'usage' && <UsageLogs />}
         {activeTab === 'mcp' && <MCP />}
         {activeTab === 'settings' && <Settings />}
       </div>

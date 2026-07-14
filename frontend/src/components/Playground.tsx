@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { API_BASE } from '../api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -66,6 +66,15 @@ export function Playground() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
 
   const [providerGroups, setProviderGroups] = useState<ProviderGroup[]>([]);
   const [modelNameMap, setModelNameMap] = useState<Record<string, string>>({'cta-ai-nexus': 'Smart Routing'});
@@ -146,6 +155,18 @@ export function Playground() {
   const newChat = () => {
     setMessages([]);
     setCurrentSessionId(null);
+  };
+
+  const deleteSession = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSessions((prev) => {
+      const updated = prev.filter(s => s.id !== id);
+      localStorage.setItem('cta_chat_sessions', JSON.stringify(updated));
+      return updated;
+    });
+    if (currentSessionId === id) {
+      newChat();
+    }
   };
 
   const handleSend = async () => {
@@ -236,14 +257,29 @@ export function Playground() {
                   padding: '0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.9rem',
                   background: currentSessionId === s.id ? 'var(--bg-tertiary)' : 'transparent',
                   color: currentSessionId === s.id ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', border: '1px solid transparent',
+                  border: '1px solid transparent',
                   borderColor: currentSessionId === s.id ? 'var(--border-color)' : 'transparent',
-                  transition: 'background 0.1s'
+                  transition: 'background 0.1s',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                 }}
                 onMouseEnter={e => { if (currentSessionId !== s.id) e.currentTarget.style.background = 'var(--bg-primary)' }}
                 onMouseLeave={e => { if (currentSessionId !== s.id) e.currentTarget.style.background = 'transparent' }}
               >
-                {s.title}
+                <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, paddingRight: '10px' }}>
+                  {s.title}
+                </div>
+                <button
+                  onClick={(e) => deleteSession(s.id, e)}
+                  style={{
+                    background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px'
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.color = '#e74c3c'; e.currentTarget.style.background = 'rgba(231,76,60,0.1)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
+                  title="Delete Chat"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
               </div>
             ))}
           </div>
@@ -281,7 +317,7 @@ export function Playground() {
               zIndex: 10, position: 'relative'
             }}>
               <textarea 
-                placeholder="Message Copilot"
+                placeholder="Message AI Nexus Router..."
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -491,13 +527,14 @@ export function Playground() {
                     {error}
                   </div>
                 )}
+                <div ref={messagesEndRef} />
               </div>
 
               <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', background: 'var(--bg-secondary)', display: 'flex', gap: '1rem' }}>
                 <input 
                   type="text" 
                   className="text-input" 
-                  placeholder="Message Copilot..." 
+                  placeholder="Message AI Nexus Router..." 
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
