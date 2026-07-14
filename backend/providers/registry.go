@@ -74,6 +74,26 @@ func GetProviderForModel(model string) (*ResolvedProvider, error) {
 	return nil, fmt.Errorf("no provider configured for model: %s", model)
 }
 
+// GetProviderByID returns the provider configuration explicitly by ID
+func GetProviderByID(providerID string) (*ResolvedProvider, error) {
+	for _, p := range config.GlobalConfig.Providers {
+		if p.ID == providerID {
+			key := db.GetKey(p.ID)
+			if key == "" && p.EnvKey != "" {
+				key = os.Getenv(p.EnvKey)
+			}
+			return &ResolvedProvider{
+				Name:              p.ID,
+				BaseURL:           p.BaseURL,
+				RequiresCustomURL: p.RequiresCustomURL,
+				APIKey:            key,
+				AuthType:          p.AuthType,
+			}, nil
+		}
+	}
+	return nil, fmt.Errorf("provider %s not found", providerID)
+}
+
 // SmartRoute represents a resolved provider and the actual model payload we should rewrite to
 type SmartRoute struct {
 	Provider    ResolvedProvider

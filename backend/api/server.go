@@ -15,6 +15,8 @@ func NewServer(frontendFS embed.FS) *http.ServeMux {
 
 	// API Routes
 mux.HandleFunc("/v1/chat/completions", handlers.HandleChatCompletions)
+mux.HandleFunc("/v1/messages", handlers.HandleAnthropicMessages)
+mux.HandleFunc("/messages", handlers.HandleAnthropicMessages)
 mux.HandleFunc("/v1/models", handlers.HandleModels)
 mux.HandleFunc("/v1/keys", handlers.HandleKeys)
 mux.HandleFunc("/v1/usage", handlers.HandleUsage)
@@ -23,6 +25,9 @@ mux.HandleFunc("/v1/settings", handlers.HandleSettings)
 mux.HandleFunc("/v1/cache", handlers.HandleCache)
 mux.HandleFunc("/v1/mcp", handlers.HandleMCP)
 mux.HandleFunc("/v1/logs", handlers.HandleLogs)
+mux.HandleFunc("/v1/phrases", handlers.HandleGetPhrases)
+mux.HandleFunc("/v1/phrases/generate", handlers.HandleGeneratePhrases)
+mux.HandleFunc("/v1/tools/execute", handlers.HandleExecuteTool)
 
 	// Frontend Static Files (optional when Wails serves the UI)
 	publicFS, err := fs.Sub(frontendFS, "public")

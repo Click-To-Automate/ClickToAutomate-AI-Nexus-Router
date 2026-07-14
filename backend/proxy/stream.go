@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -46,7 +47,23 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 			routes = smartRoutes
 		}
 	} else {
-		provider, err := providers.GetProviderForModel(model)
+		// Look for explicit provider routing e.g. "nvidia@meta/llama-3.1"
+		var explicitProvider string
+		if strings.Contains(model, "@") {
+			parts := strings.SplitN(model, "@", 2)
+			explicitProvider = parts[0]
+			model = parts[1]
+		}
+
+		var provider *providers.ResolvedProvider
+		var err error
+
+		if explicitProvider != "" {
+			provider, err = providers.GetProviderByID(explicitProvider)
+		} else {
+			provider, err = providers.GetProviderForModel(model)
+		}
+
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return err
@@ -178,26 +195,85 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 					}
 				}
 
-		newBody, err := json.Marshal(payload)
-		if err != nil {
-			http.Error(w, "Failed to marshal rewritten body", http.StatusInternalServerError)
-			return err
-		}
-
+		var finalBody []byte
 		var targetURL string
-		if route.Provider.RequiresCustomURL {
-			customURL := r.Header.Get("X-Custom-Base-Url")
-			if customURL == "" {
-				lastErr = fmt.Errorf("provider %s requires a custom base URL (pass via X-Custom-Base-Url header)", route.Provider.Name)
+
+		if route.Provider.Name == "anthropic" {
+			// Translate OpenAI payload to Anthropic Messages payload
+			anthropicPayload := make(map[string]interface{})
+			anthropicPayload["model"] = route.ActualModel
+
+			var systemPrompt string
+			var anthropicMessages []map[string]interface{}
+
+			if msgs, ok := payload["messages"].([]interface{}); ok {
+				for _, m := range msgs {
+					if mMap, ok := m.(map[string]interface{}); ok {
+						role := mMap["role"]
+						content := mMap["content"]
+
+						if role == "system" {
+							if sysStr, ok := content.(string); ok {
+								systemPrompt = sysStr
+							}
+						} else {
+							anthropicRole := "user"
+							if role == "assistant" {
+								anthropicRole = "assistant"
+							}
+							anthropicMessages = append(anthropicMessages, map[string]interface{}{
+								"role":    anthropicRole,
+								"content": content,
+							})
+						}
+					}
+				}
+			}
+
+			anthropicPayload["messages"] = anthropicMessages
+			if systemPrompt != "" {
+				anthropicPayload["system"] = systemPrompt
+			}
+
+			maxTokens := 4096
+			if mt, ok := payload["max_tokens"].(float64); ok && mt > 0 {
+				maxTokens = int(mt)
+			}
+			anthropicPayload["max_tokens"] = maxTokens
+
+			if stream {
+				anthropicPayload["stream"] = true
+			}
+
+			translatedBody, err := json.Marshal(anthropicPayload)
+			if err != nil {
+				lastErr = err
 				continue
 			}
-			customURL = strings.TrimSuffix(customURL, "/")
-			targetURL = customURL + "/chat/completions"
+			finalBody = translatedBody
+			targetURL = strings.TrimSuffix(route.Provider.BaseURL, "/") + "/messages"
 		} else {
-			targetURL = route.Provider.BaseURL + "/chat/completions"
+			newBody, err := json.Marshal(payload)
+			if err != nil {
+				http.Error(w, "Failed to marshal rewritten body", http.StatusInternalServerError)
+				return err
+			}
+			finalBody = newBody
+
+			if route.Provider.RequiresCustomURL {
+				customURL := r.Header.Get("X-Custom-Base-Url")
+				if customURL == "" {
+					lastErr = fmt.Errorf("provider %s requires a custom base URL (pass via X-Custom-Base-Url header)", route.Provider.Name)
+					continue
+				}
+				customURL = strings.TrimSuffix(customURL, "/")
+				targetURL = customURL + "/chat/completions"
+			} else {
+				targetURL = route.Provider.BaseURL + "/chat/completions"
+			}
 		}
 
-		req, err := http.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(newBody))
+		req, err := http.NewRequest(http.MethodPost, targetURL, bytes.NewBuffer(finalBody))
 		if err != nil {
 			lastErr = err
 			continue
@@ -205,20 +281,25 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 
 		req.Header.Set("Content-Type", "application/json")
 
-		// Set the correct Authorization header based on provider auth type
-		switch route.Provider.AuthType {
-		case "cookie":
-			// Web cookie providers: pass the stored value as the Cookie header
-			req.Header.Set("Cookie", route.Provider.APIKey)
-		case "oauth":
-			// OAuth providers: pass the token as Bearer (OAuth tokens are used as Bearer)
-			req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
-		case "bearer_token":
-			// Providers that use Authorization: Bearer with a non-API-key token (e.g. userToken from localStorage)
-			req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
-		default:
-			// Standard API key via Authorization: Bearer
-			req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
+		if route.Provider.Name == "anthropic" {
+			req.Header.Set("x-api-key", route.Provider.APIKey)
+			req.Header.Set("anthropic-version", "2023-06-01")
+		} else {
+			// Set the correct Authorization header based on provider auth type
+			switch route.Provider.AuthType {
+			case "cookie":
+				// Web cookie providers: pass the stored value as the Cookie header
+				req.Header.Set("Cookie", route.Provider.APIKey)
+			case "oauth":
+				// OAuth providers: pass the token as Bearer (OAuth tokens are used as Bearer)
+				req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
+			case "bearer_token":
+				// Providers that use Authorization: Bearer with a non-API-key token (e.g. userToken from localStorage)
+				req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
+			default:
+				// Standard API key via Authorization: Bearer
+				req.Header.Set("Authorization", "Bearer "+route.Provider.APIKey)
+			}
 		}
 
 		if i == 0 {
@@ -274,11 +355,23 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 		}
 		
 		// If we reached here, the request was successful or failed with a genuine user error (like 401 unauthorized).
+		// Translate response format for Anthropic provider if static
+		if !stream && route.Provider.Name == "anthropic" && resp.StatusCode == http.StatusOK {
+			translatedBytes, err := translateAnthropicToOpenAI(bodyBytes)
+			if err == nil {
+				bodyBytes = translatedBytes
+			} else {
+				log.Printf("[Anthropic-Adapter] Error translating static response: %v\n", err)
+			}
+		}
+
 		// We must put the bodyBytes back into a reader so we can stream it back!
 		resp.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 		// Success! Log telemetry to database
-		db.IncrementUsage(route.Provider.Name, totalSavedTokens)
+		tokensUsed := len(finalBody) / 4
+		log.Printf("[Telemetry] Tokens Used: ~%d | Tokens Saved: %d\n", tokensUsed, totalSavedTokens)
+		db.IncrementUsage(route.Provider.Name, tokensUsed, totalSavedTokens)
 
 		// Stream back to client.
 		w.WriteHeader(resp.StatusCode)
@@ -292,6 +385,80 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 		}
 
 		flusher, ok := w.(http.Flusher)
+
+		// If streaming from Anthropic, translate SSE events to OpenAI in real-time
+		if stream && route.Provider.Name == "anthropic" && resp.StatusCode == http.StatusOK {
+			reader := bufio.NewReader(resp.Body)
+			for {
+				line, err := reader.ReadString('\n')
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+					resp.Body.Close()
+					return fmt.Errorf("error reading Anthropic stream: %v", err)
+				}
+
+				line = strings.TrimSpace(line)
+				if line == "" {
+					continue
+				}
+
+				if strings.HasPrefix(line, "data:") {
+					dataStr := strings.TrimPrefix(line, "data:")
+					dataStr = strings.TrimSpace(dataStr)
+
+					if dataStr == "[DONE]" {
+						continue
+					}
+
+					var event struct {
+						Type  string `json:"type"`
+						Index int    `json:"index"`
+						Delta struct {
+							Type string `json:"type"`
+							Text string `json:"text"`
+						} `json:"delta"`
+					}
+
+					if err := json.Unmarshal([]byte(dataStr), &event); err == nil {
+						if event.Type == "content_block_delta" && event.Delta.Text != "" {
+							openAIChunk := map[string]interface{}{
+								"id":      "chatcmpl-adapted",
+								"object":  "chat.completion.chunk",
+								"created": 1677652288,
+								"model":   route.ActualModel,
+								"choices": []interface{}{
+									map[string]interface{}{
+										"delta": map[string]string{
+											"content": event.Delta.Text,
+										},
+										"index": 0,
+									},
+								},
+							}
+							chunkBytes, _ := json.Marshal(openAIChunk)
+							_, writeErr := fmt.Fprintf(w, "data: %s\n\n", string(chunkBytes))
+							if writeErr != nil {
+								resp.Body.Close()
+								return writeErr
+							}
+							if ok {
+								flusher.Flush()
+							}
+						}
+					}
+				}
+			}
+
+			fmt.Fprintf(w, "data: [DONE]\n\n")
+			if ok {
+				flusher.Flush()
+			}
+			resp.Body.Close()
+			return nil
+		}
+
 		buffer := make([]byte, 4096)
 		for {
 			n, err := resp.Body.Read(buffer)
@@ -320,4 +487,43 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 	// If we exhausted all routes
 	http.Error(w, fmt.Sprintf("All auto-routes failed. Last error: %v", lastErr), http.StatusBadGateway)
 	return lastErr
+}
+
+func translateAnthropicToOpenAI(anthropicBytes []byte) ([]byte, error) {
+	var antResp struct {
+		ID      string `json:"id"`
+		Model   string `json:"model"`
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+	}
+	if err := json.Unmarshal(anthropicBytes, &antResp); err != nil {
+		return nil, err
+	}
+
+	text := ""
+	for _, block := range antResp.Content {
+		if block.Type == "text" {
+			text += block.Text
+		}
+	}
+
+	openAIResp := map[string]interface{}{
+		"id":      antResp.ID,
+		"object":  "chat.completion",
+		"created": 1677652288,
+		"model":   antResp.Model,
+		"choices": []interface{}{
+			map[string]interface{}{
+				"index": 0,
+				"message": map[string]interface{}{
+					"role":    "assistant",
+					"content": text,
+				},
+				"finish_reason": "stop",
+			},
+		},
+	}
+	return json.Marshal(openAIResp)
 }

@@ -59,6 +59,43 @@ const renderMessageContent = (content: string) => {
   return <div className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown></div>;
 };
 
+const LoadingIndicator = ({ session_id }: { session_id: string | null }) => {
+  const [phrases, setPhrases] = useState<string[]>(["Thinking...", "Calling the backend...", "Routing request...", "Connecting..."]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    if (session_id) {
+      fetch(`${API_BASE}/v1/phrases?session_id=${session_id}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.phrases && d.phrases.length > 0) {
+            setPhrases(() => {
+              // Combine active DB phrases with defaults, removing duplicates
+              const unique = new Set([...d.phrases, "Thinking...", "Waiting for response..."]);
+              return Array.from(unique);
+            });
+          }
+        })
+        .catch(console.error);
+    }
+  }, [session_id]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentIndex(prev => (prev + 1) % phrases.length);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [phrases]);
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ width: '16px', height: '16px', border: '2px solid var(--accent-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+      <span>{phrases[currentIndex]}</span>
+    </div>
+  );
+};
+
 export function Playground() {
   const [messages, setMessages] = useState<{role: string, content: string}[]>([]);
   const [input, setInput] = useState('');
@@ -66,7 +103,10 @@ export function Playground() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const [phraseCountdown, setPhraseCountdown] = useState<number>(() => Math.floor(Math.random() * 10) + 5); // Random 5 to 14
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -106,8 +146,9 @@ export function Playground() {
                 models: []
               };
             }
-            grouped[pid].models.push(m.id);
-            map[m.id] = m.id;
+            const explicitId = `${pid}@${m.id}`;
+            grouped[pid].models.push(explicitId);
+            map[explicitId] = m.id;
           });
           
           setProviderGroups(Object.values(grouped));
@@ -170,43 +211,168 @@ export function Playground() {
   };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() && !attachedImage) return;
 
-    const newMsgs = [...messages, { role: 'user', content: input }];
+    let messageContent: any = input;
+    if (attachedImage) {
+      messageContent = [];
+      if (input.trim()) {
+        messageContent.push({ type: "text", text: input });
+      }
+      messageContent.push({ type: "image_url", image_url: { url: attachedImage } });
+    }
+
+    const newMsgs = [...messages, { role: 'user', content: messageContent }];
     setMessages(newMsgs);
     setInput('');
+    setAttachedImage(null);
     setLoading(true);
     setError('');
 
-    try {
-      const res = await fetch(`${API_BASE}/v1/chat/completions`, {
+    setPhraseCountdown(prev => prev - 1);
+
+    // Generate contextual phrases on the 1st message or randomly every 5-14 messages
+    if (messages.length === 0 || phraseCountdown <= 0) {
+      const sid = currentSessionId || Date.now().toString(); // Use active or fallback for 1st msg
+      // Extract text for context summary even if message is multi-modal
+      const recentContext = newMsgs.slice(-6).map(m => {
+        let text = "";
+        if (typeof m.content === "string") text = m.content;
+        else if (Array.isArray(m.content)) text = m.content.find((p:any) => p.type === "text")?.text || "";
+        return `${m.role}: ${text}`;
+      }).join("\n");
+      
+      fetch(`${API_BASE}/v1/phrases/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer test' // Router uses internal keys if available
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sid, text: recentContext })
+      }).catch(() => {});
+      
+      if (phraseCountdown <= 0) {
+        setPhraseCountdown(Math.floor(Math.random() * 10) + 5); // Reset between 5 and 14
+      }
+    }
+
+    try {
+      const tools = [
+        {
+          type: "function",
+          function: {
+            name: "search_duckduckgo",
+            description: "Searches the web for up-to-date information.",
+            parameters: { type: "object", properties: { searchQuery: { type: "string" } }, required: ["searchQuery"] }
+          }
         },
-        body: JSON.stringify({
-          model: model,
-          messages: newMsgs,
-          stream: false
-        })
-      });
+        {
+          type: "function",
+          function: {
+            name: "fetch_website",
+            description: "Fetches and reads the text content of a specific URL.",
+            parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] }
+          }
+        }
+      ];
 
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`API Error: ${res.status} - ${errText}`);
+      let currentMsgs: any[] = [...newMsgs];
+      
+      // Inject system prompt about the router
+      const systemPrompt = {
+        role: "system",
+        content: `You are an AI assistant running within the "ClickToAutomate AI Nexus Router". 
+If the user asks "who are you" or asks about this software, explain that you are part of the ClickToAutomate AI Nexus Router: a high-performance, open-source AI Gateway designed to route, manage, and optimize multi-provider LLM requests. It is built in Golang with a React frontend by the ClickToAutomate team. It features smart routing, auto-fallback, and native web search capabilities.
+
+If the user asks how to integrate or connect this router with tools like Cursor or Claude, explain the real workflow using these two specific methods:
+
+**For Cursor Integration:**
+1. Open Cursor Settings and navigate to the Models tab.
+2. Add a new Custom OpenAI Model provider.
+3. Set the Base URL to the router's local address: "http://localhost:30128/v1" (or port 20128 if using the CLI).
+4. Set the API Key to any placeholder string (e.g., "test"), as the router handles the real keys internally.
+5. Manually add your desired model name into the custom models list and enable it.
+
+**For Claude / Claude Code Integration:**
+1. Since the AI Router acts as a local API server, you can point Claude Code (or compatible clients) to the router's endpoint.
+2. Set the custom endpoint / Base URL to: "http://localhost:30128/v1" (or port 20128 if using the CLI).
+3. Provide any placeholder string for the API Key.
+4. Specify the exact model name you want the router to intercept. The router will automatically forward the request to the correct provider (Groq, Anthropic, Mistral, etc.) using your internal configured keys.
+
+If the user encounters a bug or needs troubleshooting during the integration process, you must use your \`search_duckduckgo\` and \`fetch_website\` tools to fetch the latest solutions from the internet. When researching solutions, prefer official documentation, GitHub issues, and reputable sources over random websites.
+
+Do not provide unnecessary details unless asked.`
+      };
+      
+      let apiMsgs = [systemPrompt, ...currentMsgs];
+      let isDone = false;
+
+      while (!isDone) {
+        const res = await fetch(`${API_BASE}/v1/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer test'
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: apiMsgs,
+            tools: tools,
+            stream: false
+          })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`API Error: ${res.status} - ${errText}`);
+        }
+
+        const data = await res.json();
+        if (!data.choices || data.choices.length === 0) {
+          throw new Error('Invalid response format');
+        }
+
+        const msg = data.choices[0].message;
+        currentMsgs = [...currentMsgs, msg];
+        apiMsgs = [...apiMsgs, msg];
+
+        if (msg.tool_calls && msg.tool_calls.length > 0) {
+          // Execute tools sequentially
+          for (const call of msg.tool_calls) {
+            let args = {};
+            try { args = JSON.parse(call.function.arguments); } catch (e) {}
+            
+            const toolRes = await fetch(`${API_BASE}/v1/tools/execute`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: call.function.name, arguments: args })
+            });
+            
+            const toolData = await toolRes.json();
+            const content = toolData.error ? `Error: ${toolData.error}` : toolData.result;
+            
+            currentMsgs = [...currentMsgs, { 
+              role: "tool", 
+              tool_call_id: call.id, 
+              name: call.function.name, 
+              content: content 
+            }];
+            apiMsgs = [...apiMsgs, { 
+              role: "tool", 
+              tool_call_id: call.id, 
+              name: call.function.name, 
+              content: content 
+            }];
+          }
+          // Loop continues back to the LLM with tool responses
+        } else {
+          isDone = true;
+        }
       }
 
-      const data = await res.json();
-      if (data.choices && data.choices.length > 0) {
-        setMessages([...newMsgs, data.choices[0].message]);
-      } else {
-        throw new Error('Invalid response format');
-      }
+      setMessages(currentMsgs);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'An error occurred generating response.');
-      setMessages([...newMsgs]); // Keep user message
+      // Update state with whatever was processed so far
+      setMessages(prev => prev);
     } finally {
       setLoading(false);
     }
@@ -216,6 +382,34 @@ export function Playground() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            if (ev.target?.result) setAttachedImage(ev.target.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (ev.target?.result) setAttachedImage(ev.target.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -396,7 +590,7 @@ export function Playground() {
                               onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-tertiary)'}
                               onMouseLeave={e => e.currentTarget.style.background = model === m ? 'var(--bg-secondary)' : 'transparent'}
                             >
-                              {m}
+                              {modelNameMap[m] || m}
                             </div>
                           ))}
                         </div>
@@ -496,7 +690,7 @@ export function Playground() {
             <div style={{ flex: 1, background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               
               <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {messages.map((m, i) => (
+                {messages.filter(m => m.role !== 'tool' && !(m.role === 'assistant' && !m.content)).map((m, i) => (
                   <div key={i} style={{ 
                     alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
                     background: m.role === 'user' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
@@ -512,7 +706,15 @@ export function Playground() {
                       {m.role === 'user' ? 'You' : 'Assistant'}
                     </div>
                     {m.role === 'user' ? (
-                      <div style={{ whiteSpace: 'pre-wrap' }}>{m.content}</div>
+                      <div style={{ whiteSpace: 'pre-wrap' }}>
+                        {typeof m.content === 'string' ? m.content : (
+                          Array.isArray(m.content) ? (m.content as any[]).map((part: any, idx: number) => {
+                            if (part.type === 'text') return <span key={idx}>{part.text}</span>;
+                            if (part.type === 'image_url') return <img key={idx} src={part.image_url.url} style={{maxWidth: '100%', maxHeight: '300px', display: 'block', marginTop: '10px', borderRadius: '8px'}} alt="attached" />;
+                            return null;
+                          }) : null
+                        )}
+                      </div>
                     ) : (
                       renderMessageContent(m.content)
                     )}
@@ -520,7 +722,7 @@ export function Playground() {
                 ))}
                 {loading && (
                   <div style={{ alignSelf: 'flex-start', padding: '1rem', color: 'var(--text-muted)' }}>
-                    Routing request...
+                    <LoadingIndicator session_id={currentSessionId} />
                   </div>
                 )}
                 {error && (
@@ -531,20 +733,48 @@ export function Playground() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', background: 'var(--bg-secondary)', display: 'flex', gap: '1rem' }}>
-                <input 
-                  type="text" 
-                  className="text-input" 
-                  placeholder="Message AI Nexus Router..." 
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  style={{ flex: 1 }}
-                  disabled={loading}
-                />
-                <button className="btn-primary" onClick={handleSend} disabled={loading || !input.trim()} style={{ width: 'auto', padding: '0 2rem' }}>
-                  Send
-                </button>
+              <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {attachedImage && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                      <img src={attachedImage} alt="Preview" style={{ height: '60px', borderRadius: '6px', border: '1px solid var(--border-color)' }} />
+                      <button onClick={() => setAttachedImage(null)} style={{
+                        position: 'absolute', top: '-8px', right: '-8px', background: 'var(--accent-primary)', color: '#fff',
+                        border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px'
+                      }}>×</button>
+                    </div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <input type="file" accept="image/*" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileSelect} />
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '50%',
+                      width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer', color: 'var(--text-secondary)', transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                  <input 
+                    type="text" 
+                    className="text-input" 
+                    placeholder="Message AI Nexus Router... (Ctrl+V to paste image)" 
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onPaste={handlePaste}
+                    style={{ flex: 1 }}
+                    disabled={loading}
+                  />
+                  <button className="btn-primary" onClick={handleSend} disabled={loading || (!input.trim() && !attachedImage)} style={{ width: 'auto', padding: '0 2rem' }}>
+                    Send
+                  </button>
+                </div>
               </div>
             </div>
           </>

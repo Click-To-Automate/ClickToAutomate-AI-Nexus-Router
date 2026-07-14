@@ -13,6 +13,7 @@ import (
 type UsageData struct {
 	Count       int `json:"count"`
 	TokensSaved int `json:"tokens_saved"`
+	TokensUsed  int `json:"tokens_used"`
 }
 
 var DB *sql.DB
@@ -74,6 +75,13 @@ func InitDB(customDBPath string) error {
 		response TEXT NOT NULL,
 		tokens_saved INTEGER DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	CREATE TABLE IF NOT EXISTS loading_phrases (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		session_id TEXT NOT NULL,
+		phrase TEXT NOT NULL,
+		usage_count INTEGER DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);`
 	
 	_, err = db.Exec(createTableSQL)
@@ -89,6 +97,7 @@ func InitDB(customDBPath string) error {
 
 	// Try migrating usage_stats to include tokens_saved if it doesn't exist
 	_, _ = db.Exec(`ALTER TABLE usage_stats ADD COLUMN tokens_saved INTEGER DEFAULT 0;`)
+	_, _ = db.Exec(`ALTER TABLE usage_stats ADD COLUMN tokens_used INTEGER DEFAULT 0;`)
 
 	DB = db
 	return nil
@@ -138,31 +147,32 @@ func DeleteKey(providerID, apiKey string) error {
 	return err
 }
 
-// IncrementUsage increments the request count and tokens saved for a given provider.
-func IncrementUsage(providerID string, tokensSaved int) error {
+// IncrementUsage increments the request count, tokens used, and tokens saved for a given provider.
+func IncrementUsage(providerID string, tokensUsed int, tokensSaved int) error {
 	if DB == nil {
 		return fmt.Errorf("database not initialized")
 	}
 
 	upsertSQL := `
-	INSERT INTO usage_stats (provider_id, request_count, tokens_saved) 
-	VALUES (?, 1, ?)
+	INSERT INTO usage_stats (provider_id, request_count, tokens_saved, tokens_used) 
+	VALUES (?, 1, ?, ?)
 	ON CONFLICT(provider_id) DO UPDATE SET 
 		request_count = request_count + 1,
-		tokens_saved = tokens_saved + ?;
+		tokens_saved = tokens_saved + ?,
+		tokens_used = tokens_used + ?;
 	`
-	_, err := DB.Exec(upsertSQL, providerID, tokensSaved, tokensSaved)
+	_, err := DB.Exec(upsertSQL, providerID, tokensSaved, tokensUsed, tokensSaved, tokensUsed)
 	return err
 }
 
-// GetAllUsage retrieves the request counts and tokens saved for all providers.
+// GetAllUsage retrieves the request counts, tokens used, and tokens saved for all providers.
 func GetAllUsage() map[string]UsageData {
 	usage := make(map[string]UsageData)
 	if DB == nil {
 		return usage
 	}
 
-	rows, err := DB.Query("SELECT provider_id, request_count, COALESCE(tokens_saved, 0) FROM usage_stats")
+	rows, err := DB.Query("SELECT provider_id, request_count, COALESCE(tokens_saved, 0), COALESCE(tokens_used, 0) FROM usage_stats")
 	if err != nil {
 		return usage
 	}
@@ -172,10 +182,12 @@ func GetAllUsage() map[string]UsageData {
 		var id string
 		var count int
 		var saved int
-		if err := rows.Scan(&id, &count, &saved); err == nil {
+		var used int
+		if err := rows.Scan(&id, &count, &saved, &used); err == nil {
 			usage[id] = UsageData{
 				Count:       count,
 				TokensSaved: saved,
+				TokensUsed:  used,
 			}
 		}
 	}

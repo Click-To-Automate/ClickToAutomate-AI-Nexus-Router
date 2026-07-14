@@ -784,8 +784,7 @@
             "env_key": "LLM7_API_KEY",
             "prefixes": [
                 "llm7"
-            ],
-            "requires_custom_url": true
+            ]
         },
         {
             "id": "longcat",
