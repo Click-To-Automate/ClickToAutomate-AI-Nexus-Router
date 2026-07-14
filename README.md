@@ -19,11 +19,16 @@ By leveraging Go's single-binary compilation, users can download just one execut
 
 ## Getting Started
 
-### Standalone Executable
-Simply run the compiled executable. The Go server will start the AI Gateway and automatically serve the React dashboard on `http://localhost:20128`.
+### CLI Application (Headless)
+Run the compiled `AI Router CLI.exe` from your terminal or command prompt. It will start the proxy server on port `20128` and stream logs to your terminal. Even in headless mode, you can still manage your providers by opening `http://localhost:20128` in any web browser.
 
-### Desktop Application
-Launch the ClickToAutomate AI Nexus Router desktop app. The native GUI will automatically manage the Go backend sidecar in the background.
+**Available Flags:**
+- `--port <number>`: Override the default port (e.g. `--port 8080`)
+- `--db <path>`: Specify a custom SQLite database path
+- `--help`: View all available commands
+
+### GUI Desktop Application
+Launch the `AI Router GUI.exe` desktop app. The native window (powered by Wails) will automatically manage the Go backend in the background and present the dashboard directly on your desktop. Logs are accessible via the built-in Logs tab.
 
 ## Project Structure
 
@@ -34,9 +39,11 @@ Launch the ClickToAutomate AI Nexus Router desktop app. The native GUI will auto
 ## Changelog
 
 ### v1.0.0
-- Added **Logs section** to the dashboard for real-time backend monitoring.
+- **Dual Build System**: Now ships with both a lightweight **CLI executable** and a full **GUI desktop application** (Wails).
+- **Advanced Logging**: Real-time memory log buffer in the UI, plus automatic background physical `logs.txt` writer inside the database folder.
+- **Enhanced Playground**: Smooth auto-scroll behavior for long streams and quick "Delete Chat" session management.
+- **CORS Compatibility**: Proper preflight `OPTIONS` support on proxy endpoints, enabling in-browser web UI fetching directly.
 - Fixed **image processing** to support vision-capable models (e.g., `gpt-4o`, `claude-3.5-sonnet`).
-- Updated Wails build to include WebView2 runtime for Windows.
 
 ## Build Instructions
 

@@ -5,14 +5,17 @@ Welcome to the documentation for the **CTA AI Nexus Router** — a high-performa
 ## Release Notes
 
 ### v1.0.0
-- Added **Logs section** to the dashboard for real-time backend monitoring.
+- **Dual Build System**: Now ships with both a lightweight **CLI executable** and a full **GUI desktop application** (Wails).
+- **Advanced Logging**: Real-time memory log buffer in the UI, plus automatic background physical `logs.txt` writer inside the database folder.
+- **Enhanced Playground**: Smooth auto-scroll behavior for long streams and quick "Delete Chat" session management.
+- **CORS Compatibility**: Proper preflight `OPTIONS` support on proxy endpoints, enabling in-browser web UI fetching directly.
 - Fixed **image processing** to support vision-capable models (e.g., `gpt-4o`, `claude-3.5-sonnet`).
-- Updated Wails build to include WebView2 runtime for Windows.
 
 ## Documentation Index
 
 ### Getting Started
 - [Quick Start Guide](getting-started/QUICK-START.md) — Install, run, configure, and start routing requests in minutes
+- [CLI Guide](getting-started/CLI-GUIDE.md) — How to run the lightweight headless router via command line
 
 ### Architecture
 - [System Architecture](architecture/ARCHITECTURE.md) — Directory structure, request flow, API endpoints, and data persistence
