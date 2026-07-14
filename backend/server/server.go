@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"ainexusrouter-core/api"
 	"ainexusrouter-core/config"
@@ -32,6 +33,25 @@ func RunServer(port string, dbPath string, content embed.FS) error {
 
 	// Initialize the API server with embedded frontend (if any)
 	mux := api.NewServer(content)
+
+	// Spawn background cache sweeper (TTL: 30 days)
+	go func() {
+		// Run once on startup
+		if err := db.CleanExpiredCache(30); err != nil {
+			log.Printf("Warning: Failed to clean expired cache on startup: %v", err)
+		}
+		
+		// Then run every 24 hours
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+		for range ticker.C {
+			if err := db.CleanExpiredCache(30); err != nil {
+				log.Printf("Warning: Failed to clean expired cache: %v", err)
+			} else {
+				log.Printf("Successfully ran daily cache cleanup")
+			}
+		}
+	}()
 
 	// Same as start.bat: free the port if a previous instance is still bound.
 	freePort(port)

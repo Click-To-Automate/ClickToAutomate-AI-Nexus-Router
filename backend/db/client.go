@@ -255,3 +255,13 @@ func ClearCache() error {
 	_, err := DB.Exec("DELETE FROM semantic_cache")
 	return err
 }
+
+// CleanExpiredCache deletes cache entries older than the specified number of days.
+func CleanExpiredCache(days int) error {
+	if DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+	query := fmt.Sprintf("DELETE FROM semantic_cache WHERE created_at < datetime('now', '-%d days')", days)
+	_, err := DB.Exec(query)
+	return err
+}

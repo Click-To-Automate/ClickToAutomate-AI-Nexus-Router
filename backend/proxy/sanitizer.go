@@ -1,5 +1,8 @@
 package proxy
 
+import (
+	"regexp"
+)
 // GlobalSanitizeRequest performs a pre-flight structural clean up of the payload.
 // It explicitly removes proprietary fields injected by clients like Cursor
 // before hitting the upstream provider.
@@ -22,14 +25,22 @@ func GlobalSanitizeRequest(payload map[string]interface{}) (hasImage bool) {
 						sanitizedContent := sanitizeImageURL(contentArray)
 						msg["content"] = sanitizedContent
 						
-						// Check for images after sanitization
-						for _, contentItem := range sanitizedContent {
+						// Check for images and redact secrets in text
+						for i, contentItem := range sanitizedContent {
 							if item, ok := contentItem.(map[string]interface{}); ok {
 								if item["type"] == "image_url" {
 									hasImage = true
+								} else if item["type"] == "text" {
+									if textContent, ok := item["text"].(string); ok {
+										item["text"] = RedactSecrets(textContent)
+										sanitizedContent[i] = item
+									}
 								}
 							}
 						}
+					} else if contentStr, ok := msg["content"].(string); ok {
+						// If content is just a string, redact secrets from it directly
+						msg["content"] = RedactSecrets(contentStr)
 					}
 				}
 			}
@@ -71,4 +82,18 @@ func sanitizeImageURL(content []interface{}) []interface{} {
 		}
 	}
 	return sanitizedContent
+}
+
+var secretPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`sk-[a-zA-Z0-9]{32,}`),         // OpenAI
+	regexp.MustCompile(`sk-ant-[a-zA-Z0-9_-]{32,}`),   // Anthropic
+	regexp.MustCompile(`Bearer\s+[a-zA-Z0-9_\-\.]{32,}`), // Generic Bearer Tokens
+}
+
+// RedactSecrets scans a string for common credentials and replaces them with [REDACTED].
+func RedactSecrets(text string) string {
+	for _, pattern := range secretPatterns {
+		text = pattern.ReplaceAllString(text, "[REDACTED]")
+	}
+	return text
 }
