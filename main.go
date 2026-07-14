@@ -24,7 +24,7 @@ func main() {
 	go func() {
 		// Provide an empty embed.FS to the server since Wails handles assets now
 		var emptyEmbed embed.FS
-		if err := server.RunServer(apiport.Port, emptyEmbed); err != nil {
+		if err := server.RunServer(apiport.Port, "", emptyEmbed); err != nil {
 			log.Fatalf("API Server crashed: %v", err)
 		}
 	}()

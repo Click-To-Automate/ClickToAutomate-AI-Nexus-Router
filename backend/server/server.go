@@ -14,7 +14,7 @@ import (
 
 // RunServer initializes the application context and starts the HTTP API proxy.
 // It runs blocking, so it should typically be called in a goroutine when embedded in Wails.
-func RunServer(port string, content embed.FS) error {
+func RunServer(port string, dbPath string, content embed.FS) error {
 	// Providers are compiled into the binary (backend/config/providers.json)
 	if err := config.LoadProviders(); err != nil {
 		log.Printf("Warning: Could not load embedded providers: %v", err)
@@ -23,7 +23,7 @@ func RunServer(port string, content embed.FS) error {
 	}
 
 	// Initialize SQLite Database
-	if err := db.InitDB(); err != nil {
+	if err := db.InitDB(dbPath); err != nil {
 		log.Printf("Warning: Failed to initialize SQLite database: %v", err)
 	}
 

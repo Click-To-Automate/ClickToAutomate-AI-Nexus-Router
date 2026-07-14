@@ -17,21 +17,27 @@ type UsageData struct {
 
 var DB *sql.DB
 
-func InitDB() error {
-	// 1. Resolve path to C:/Users/<username>/Documents/.cta-ai-nexus
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("failed to get user home dir: %v", err)
-	}
+func InitDB(customDBPath string) error {
+	var dbPath string
 
-	appDir := filepath.Join(homeDir, "Documents", ".cta-ai-nexus")
-	
-	// Ensure directory exists
-	if err := os.MkdirAll(appDir, 0755); err != nil {
-		return fmt.Errorf("failed to create app directory: %v", err)
-	}
+	if customDBPath != "" {
+		dbPath = customDBPath
+	} else {
+		// 1. Resolve path to C:/Users/<username>/Documents/.cta-ai-nexus
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("failed to get user home dir: %v", err)
+		}
 
-	dbPath := filepath.Join(appDir, "router.db")
+		appDir := filepath.Join(homeDir, "Documents", ".cta-ai-nexus")
+		
+		// Ensure directory exists
+		if err := os.MkdirAll(appDir, 0755); err != nil {
+			return fmt.Errorf("failed to create app directory: %v", err)
+		}
+
+		dbPath = filepath.Join(appDir, "router.db")
+	}
 
 	// 2. Open SQLite database using modernc.org/sqlite
 	db, err := sql.Open("sqlite", dbPath)
