@@ -2,10 +2,11 @@ package proxy
 
 import (
 	"strings"
+	"ainexusrouter-core/providers"
 )
 
-// AnalyzeComplexity examines the chat messages to determine the mathematical complexity score (0.0 to 1.0)
-func AnalyzeComplexity(messages []interface{}) float64 {
+// AnalyzeIntent examines the chat messages to determine the intent and complexity
+func AnalyzeIntent(messages []interface{}) providers.IntentProfile {
 	var fullTextBuilder strings.Builder
 
 	// Concatenate all user messages to analyze intent
@@ -31,31 +32,39 @@ func AnalyzeComplexity(messages []interface{}) float64 {
 
 	// 0. Massive Payload Detection -> Extremely high complexity
 	if approxTokens > 10000 {
-		return 0.95
+		return providers.IntentProfile{
+			Complexity:  0.95,
+			IsCoding:    false,
+			IsReasoning: false,
+		}
 	}
 
 	score := 0.5 // Baseline complexity
 
 	// 1. Code Detection -> Increases complexity requirement
+	isCoding := false
 	codeKeywords := []string{
 		"```", "function", "def ", "class ", "interface ", 
-		"refactor", "bug", "error:", "compile", "script",
+		"refactor", "bug", "error:", "compile", "script", "json", "python", "golang",
 	}
 	for _, kw := range codeKeywords {
 		if strings.Contains(fullText, kw) {
 			score += 0.3
+			isCoding = true
 			break
 		}
 	}
 
-	// 2. Complex/Analysis Detection -> Increases complexity requirement
+	// 2. Complex/Analysis/Reasoning Detection -> Increases complexity requirement
+	isReasoning := false
 	complexKeywords := []string{
 		"analyze", "summarize", "explain the difference", 
-		"compare", "architecture", "design", "essay",
+		"compare", "architecture", "design", "essay", "math", "calculate", "solve", "logic", "puzzle",
 	}
 	for _, kw := range complexKeywords {
 		if strings.Contains(fullText, kw) {
 			score += 0.2
+			isReasoning = true
 			break
 		}
 	}
@@ -68,5 +77,9 @@ func AnalyzeComplexity(messages []interface{}) float64 {
 		score = 0.95 // Cap maximum complexity requirement slightly below 1.0
 	}
 
-	return score
+	return providers.IntentProfile{
+		Complexity:  score,
+		IsCoding:    isCoding,
+		IsReasoning: isReasoning,
+	}
 }

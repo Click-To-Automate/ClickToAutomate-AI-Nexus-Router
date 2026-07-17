@@ -16,6 +16,28 @@ type ChatSession = {
   messages: { role: string; content: string }[];
 };
 
+const markdownComponents = {
+  a: ({ node, ...props }: any) => {
+    return (
+      <a 
+        {...props} 
+        onClick={(e) => {
+          e.preventDefault();
+          if (props.href) {
+            if (window.confirm(`Open this link in your external browser?\n\n${props.href}`)) {
+              if ((window as any).runtime && (window as any).runtime.BrowserOpenURL) {
+                (window as any).runtime.BrowserOpenURL(props.href);
+              } else {
+                window.open(props.href, '_blank');
+              }
+            }
+          }
+        }} 
+      />
+    );
+  }
+};
+
 const renderMessageContent = (content: string) => {
   const thinkStart = content.indexOf('<think>');
   const thinkEnd = content.indexOf('</think>');
@@ -27,16 +49,16 @@ const renderMessageContent = (content: string) => {
 
     return (
       <>
-        {beforeThink && <div className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{beforeThink}</ReactMarkdown></div>}
+        {beforeThink && <div className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{beforeThink}</ReactMarkdown></div>}
         <details style={{ marginBottom: '1rem', background: 'rgba(0,0,0,0.02)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
           <summary style={{ cursor: 'pointer', color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.85rem', userSelect: 'none' }}>
             Thinking Process...
           </summary>
           <div className="markdown-body" style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{thinkContent.trim()}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{thinkContent.trim()}</ReactMarkdown>
           </div>
         </details>
-        {afterThink && <div className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{afterThink}</ReactMarkdown></div>}
+        {afterThink && <div className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{afterThink}</ReactMarkdown></div>}
       </>
     );
   }
@@ -50,13 +72,13 @@ const renderMessageContent = (content: string) => {
           Thinking Process...
         </summary>
         <div className="markdown-body" style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{thinkContent.trim()}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{thinkContent.trim()}</ReactMarkdown>
         </div>
       </details>
     );
   }
 
-  return <div className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown></div>;
+  return <div className="markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{content}</ReactMarkdown></div>;
 };
 
 const LoadingIndicator = ({ session_id }: { session_id: string | null }) => {
@@ -116,17 +138,89 @@ export function Playground() {
     scrollToBottom();
   }, [messages, loading]);
 
+  // Global Paste Handler for WebView2 Image Support
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      if (!e.clipboardData) return;
+      
+      let foundImage = false;
+      const items = e.clipboardData.items;
+      
+      if (items) {
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type.indexOf('image') !== -1) {
+            const file = items[i].getAsFile();
+            if (file) {
+              foundImage = true;
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                if (ev.target?.result) setAttachedImage(ev.target.result as string);
+              };
+              reader.readAsDataURL(file);
+              return;
+            }
+          }
+        }
+      }
+
+      if (!foundImage && e.clipboardData.files && e.clipboardData.files.length > 0) {
+        for (let i = 0; i < e.clipboardData.files.length; i++) {
+          const file = e.clipboardData.files[i];
+          if (file.type.indexOf('image') !== -1 || file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+            foundImage = true;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              if (ev.target?.result) setAttachedImage(ev.target.result as string);
+            };
+            reader.readAsDataURL(file);
+            return;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, []);
+
   const [providerGroups, setProviderGroups] = useState<ProviderGroup[]>([]);
   const [modelNameMap, setModelNameMap] = useState<Record<string, string>>({'cta-ai-nexus': 'Smart Routing'});
 
   const [memoryEnabled, setMemoryEnabled] = useState(() => {
     return localStorage.getItem('cta_memory_enabled') === 'true';
   });
-  const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    const s = localStorage.getItem('cta_chat_sessions');
-    return s ? JSON.parse(s) : [];
-  });
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  useEffect(() => {
+    fetch(`${API_BASE}/v1/chats`)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          // The API returns sessions, but we also need their messages.
+          // In a real app we'd fetch messages per session on demand. 
+          // For now we'll just let the API sync HandleChats return what it can, or we rely on the sync.
+          // Wait, GET /v1/chats doesn't return Messages. Let's just fetch messages for each session.
+          Promise.all(data.map((s: any) => 
+            fetch(`${API_BASE}/v1/chats/messages?session_id=${s.id}`)
+              .then(r => r.json())
+              .then(msgs => ({ ...s, messages: msgs || [] }))
+          )).then(fullSessions => {
+            setSessions(fullSessions);
+          });
+        }
+      })
+      .catch(console.error);
+  }, []);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [customSystemPrompt, setCustomSystemPrompt] = useState("");
+
+  useEffect(() => {
+    fetch(`${API_BASE}/v1/settings?key=system_prompt`)
+      .then(r => r.json())
+      .then(d => { if (d && d.value) setCustomSystemPrompt(d.value) })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     fetch(`${API_BASE}/v1/models`)
@@ -163,9 +257,9 @@ export function Playground() {
     localStorage.setItem('cta_memory_enabled', String(memoryEnabled));
   }, [memoryEnabled]);
 
-  // Sync sessions on messages update if memory is enabled
+  // Sync sessions on messages update (History is always saved)
   useEffect(() => {
-    if (memoryEnabled && messages.length > 0) {
+    if (messages.length > 0) {
       setSessions((prev: ChatSession[]) => {
         let updated = [...prev];
         const existingIdx = updated.findIndex(s => s.id === currentSessionId);
@@ -179,7 +273,12 @@ export function Playground() {
           updated.unshift(newSession);
           setCurrentSessionId(newId);
         }
-        localStorage.setItem('cta_chat_sessions', JSON.stringify(updated));
+        // Sync with DB
+        fetch(`${API_BASE}/v1/chats`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated)
+        }).catch(console.error);
         return updated;
       });
     }
@@ -202,7 +301,7 @@ export function Playground() {
     e.stopPropagation();
     setSessions((prev) => {
       const updated = prev.filter(s => s.id !== id);
-      localStorage.setItem('cta_chat_sessions', JSON.stringify(updated));
+      fetch(`${API_BASE}/v1/chats?id=${id}`, { method: 'DELETE' }).catch(console.error);
       return updated;
     });
     if (currentSessionId === id) {
@@ -270,6 +369,22 @@ export function Playground() {
             description: "Fetches and reads the text content of a specific URL.",
             parameters: { type: "object", properties: { url: { type: "string" } }, required: ["url"] }
           }
+        },
+        {
+          type: "function",
+          function: {
+            name: "list_directory",
+            description: "Lists the contents of a local directory on the router's host machine.",
+            parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "read_local_file",
+            description: "Reads the content of a local file on the router's host machine.",
+            parameters: { type: "object", properties: { path: { type: "string" } }, required: ["path"] }
+          }
         }
       ];
 
@@ -278,7 +393,7 @@ export function Playground() {
       // Inject system prompt about the router
       const systemPrompt = {
         role: "system",
-        content: `You are an AI assistant running within the "ClickToAutomate AI Nexus Router". 
+        content: customSystemPrompt ? customSystemPrompt : `You are an AI assistant running within the "ClickToAutomate AI Nexus Router". 
 If the user asks "who are you" or asks about this software, explain that you are part of the ClickToAutomate AI Nexus Router: a high-performance, open-source AI Gateway designed to route, manage, and optimize multi-provider LLM requests. It is built in Golang with a React frontend by the ClickToAutomate team. It features smart routing, auto-fallback, and native web search capabilities.
 
 If the user asks how to integrate or connect this router with tools like Cursor or Claude, explain the real workflow using these two specific methods:
@@ -315,7 +430,8 @@ Do not provide unnecessary details unless asked.`
             model: model,
             messages: apiMsgs,
             tools: tools,
-            stream: false
+            stream: true,
+            memory_enabled: memoryEnabled
           })
         });
 
@@ -324,14 +440,69 @@ Do not provide unnecessary details unless asked.`
           throw new Error(`API Error: ${res.status} - ${errText}`);
         }
 
-        const data = await res.json();
-        if (!data.choices || data.choices.length === 0) {
-          throw new Error('Invalid response format');
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let doneReading = false;
+        let assistantContent = "";
+        let toolCalls: any[] = [];
+        let hasCreatedPlaceholder = false;
+
+        while (!doneReading && reader) {
+          const { value, done } = await reader.read();
+          if (done) {
+            doneReading = true;
+            break;
+          }
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ") && line.trim() !== "data: [DONE]") {
+              try {
+                const data = JSON.parse(line.slice(6));
+                const delta = data.choices[0].delta;
+                
+                if (delta.content) {
+                  assistantContent += delta.content;
+                  if (!hasCreatedPlaceholder) {
+                    setMessages(prev => [...prev, { role: 'assistant', content: assistantContent }]);
+                    hasCreatedPlaceholder = true;
+                  } else {
+                    setMessages(prev => {
+                      const next = [...prev];
+                      next[next.length - 1] = { role: 'assistant', content: assistantContent };
+                      return next;
+                    });
+                  }
+                }
+                
+                if (delta.tool_calls) {
+                  for (const tc of delta.tool_calls) {
+                    if (!toolCalls[tc.index]) {
+                      toolCalls[tc.index] = { id: tc.id, type: 'function', function: { name: tc.function?.name, arguments: '' } };
+                    }
+                    if (tc.function?.arguments) {
+                      toolCalls[tc.index].function.arguments += tc.function.arguments;
+                    }
+                  }
+                }
+              } catch(e) {}
+            }
+          }
         }
 
-        const msg = data.choices[0].message;
-        currentMsgs = [...currentMsgs, msg];
-        apiMsgs = [...apiMsgs, msg];
+        const finalMsg = { 
+          role: 'assistant', 
+          content: assistantContent, 
+          tool_calls: toolCalls.length > 0 ? toolCalls.filter(Boolean) : undefined 
+        };
+        
+        currentMsgs = [...currentMsgs, finalMsg];
+        apiMsgs = [...apiMsgs, finalMsg];
+        if (!hasCreatedPlaceholder && !finalMsg.tool_calls) {
+           setMessages(currentMsgs);
+        }
+
+        const msg = finalMsg;
 
         if (msg.tool_calls && msg.tool_calls.length > 0) {
           // Execute tools sequentially
@@ -385,23 +556,6 @@ Do not provide unnecessary details unless asked.`
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        const file = items[i].getAsFile();
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            if (ev.target?.result) setAttachedImage(ev.target.result as string);
-          };
-          reader.readAsDataURL(file);
-        }
-      }
-    }
-  };
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
@@ -415,9 +569,8 @@ Do not provide unnecessary details unless asked.`
 
   return (
     <div style={{ display: 'flex', height: '100%', width: '100%' }}>
-      {/* Sidebar for Chat Memory */}
-      {memoryEnabled && (
-        <div style={{ 
+      {/* Sidebar for Chat Memory (Always visible) */}
+      <div style={{ 
           width: '260px', borderRight: '1px solid var(--border-color)', background: 'var(--bg-secondary)', 
           display: 'flex', flexDirection: 'column', padding: '1rem', overflowY: 'auto'
         }}>
@@ -479,7 +632,6 @@ Do not provide unnecessary details unless asked.`
             ))}
           </div>
         </div>
-      )}
 
       {/* Main Chat Area */}
       <div className="fade-in" style={{ padding: '2rem', flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
@@ -487,21 +639,42 @@ Do not provide unnecessary details unless asked.`
         {messages.length === 0 ? (
           <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             
-            <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', alignItems: 'center', gap: '8px', zIndex: 20 }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Memory</span>
+            <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', alignItems: 'center', gap: '16px', zIndex: 20 }}>
+              
+              {/* Settings Button */}
               <button 
-                onClick={() => setMemoryEnabled(!memoryEnabled)}
-                style={{
-                  width: '40px', height: '22px', borderRadius: '11px', background: memoryEnabled ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
-                  border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s'
+                onClick={() => setIsSettingsOpen(true)}
+                title="Playground Settings"
+                style={{ 
+                  background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', borderRadius: '50%',
+                  transition: 'background 0.2s, color 0.2s'
                 }}
+                onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--bg-tertiary)'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent'; }}
               >
-                <div style={{
-                  width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
-                  position: 'absolute', top: '2px', left: memoryEnabled ? '20px' : '2px',
-                  transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                }} />
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
               </button>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Memory</span>
+                <button 
+                  onClick={() => setMemoryEnabled(!memoryEnabled)}
+                  style={{
+                    width: '40px', height: '22px', borderRadius: '11px', background: memoryEnabled ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                    border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s'
+                  }}
+                >
+                  <div style={{
+                    width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+                    position: 'absolute', top: '2px', left: memoryEnabled ? '20px' : '2px',
+                    transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                  }} />
+                </button>
+              </div>
             </div>
 
             <div style={{ 
@@ -511,8 +684,20 @@ Do not provide unnecessary details unless asked.`
               boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
               zIndex: 10, position: 'relative'
             }}>
+              {attachedImage && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <img src={attachedImage} alt="Preview" style={{ height: '60px', borderRadius: '6px', border: '1px solid var(--border-color)' }} />
+                    <button onClick={() => setAttachedImage(null)} style={{
+                      position: 'absolute', top: '-8px', right: '-8px', background: 'var(--accent-primary)', color: '#fff',
+                      border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px'
+                    }}>×</button>
+                  </div>
+                </div>
+              )}
               <textarea 
-                placeholder="Message AI Nexus Router..."
+                placeholder="Message AI Nexus Router... (Ctrl+V to paste image)"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -525,7 +710,9 @@ Do not provide unnecessary details unless asked.`
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem' }}>
                 <div style={{ display: 'flex', gap: '0.75rem', position: 'relative' }}>
-                  <button style={{ 
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ 
                     background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '50%', 
                     width: '36px', height: '36px', color: 'var(--text-secondary)', fontSize: '1.5rem', 
                     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
@@ -726,8 +913,12 @@ Do not provide unnecessary details unless asked.`
                   </div>
                 )}
                 {error && (
-                  <div style={{ alignSelf: 'center', padding: '1rem', color: '#e74c3c', background: 'rgba(231,76,60,0.1)', borderRadius: '8px', marginTop: '1rem' }}>
-                    {error}
+                  <div style={{ 
+                    alignSelf: 'flex-start', padding: '1rem', background: 'rgba(231,76,60,0.1)',
+                    border: '1px solid #e74c3c', color: '#e74c3c', borderRadius: '12px', maxWidth: '85%'
+                  }}>
+                    <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>Error</div>
+                    <div>{error}</div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -767,7 +958,6 @@ Do not provide unnecessary details unless asked.`
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    onPaste={handlePaste}
                     style={{ flex: 1 }}
                     disabled={loading}
                   />
@@ -780,6 +970,43 @@ Do not provide unnecessary details unless asked.`
           </>
         )}
       </div>
+      
+      {isSettingsOpen && (
+        <div className="modal-overlay" onClick={() => setIsSettingsOpen(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Playground Settings</h3>
+              <button className="btn-close" onClick={() => setIsSettingsOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Custom System Prompt</label>
+                <textarea 
+                  className="form-control"
+                  style={{ minHeight: '150px' }}
+                  placeholder="e.g. Always reply in Spanish... (Leave blank to use default)"
+                  value={customSystemPrompt}
+                  onChange={e => setCustomSystemPrompt(e.target.value)}
+                />
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                  This prompt will replace the default system prompt for all new messages sent from the Playground.
+                </p>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setIsSettingsOpen(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={() => {
+                fetch(`${API_BASE}/v1/settings`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ key: 'system_prompt', value: customSystemPrompt })
+                });
+                setIsSettingsOpen(false);
+              }}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

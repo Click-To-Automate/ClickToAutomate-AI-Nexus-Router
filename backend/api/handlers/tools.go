@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"ainexusrouter-core/plugins/local"
 	"ainexusrouter-core/plugins/search"
 )
 
@@ -45,6 +46,20 @@ func HandleExecuteTool(w http.ResponseWriter, r *http.Request) {
 			err = fmt.Errorf("missing or invalid url argument")
 		} else {
 			result, err = executeFetchWebsite(url)
+		}
+	} else if req.Name == "read_local_file" {
+		path, ok := req.Arguments["path"].(string)
+		if !ok {
+			err = fmt.Errorf("missing or invalid path argument")
+		} else {
+			result, err = local.ReadFile(path)
+		}
+	} else if req.Name == "list_directory" {
+		path, ok := req.Arguments["path"].(string)
+		if !ok {
+			err = fmt.Errorf("missing or invalid path argument")
+		} else {
+			result, err = local.ListDirectory(path)
 		}
 	} else {
 		err = fmt.Errorf("unknown tool: %s", req.Name)

@@ -3,23 +3,33 @@ package providers
 import (
 	"sort"
 	"sync"
+	"ainexusrouter-core/db"
 )
 
 // ModelStats represents intrinsic constraints of a model for the primal problem
 type ModelStats struct {
-	Cost    float64 // normalized 0.0-1.0
+	Cost    float64 // Tiered: 0.0 (Free), 10.0 (Low Cost), 20.0 (Paid)
 	Latency float64 // normalized 0.0-1.0
 	Quality float64 // normalized 0.0-1.0
 }
 
 // Baseline knowledge of our model families
 var providerStats = map[string]ModelStats{
-	"cerebras":  {Cost: 0.1, Latency: 0.1, Quality: 0.60},
-	"groq":      {Cost: 0.3, Latency: 0.2, Quality: 0.85},
-	"openai":    {Cost: 0.2, Latency: 0.2, Quality: 0.75}, // assuming 4o-mini
-	"gemini":    {Cost: 0.5, Latency: 0.6, Quality: 0.88},
-	"mistral":   {Cost: 0.7, Latency: 0.5, Quality: 0.90},
-	"anthropic": {Cost: 0.6, Latency: 0.5, Quality: 0.95},
+	// --- FREE TIER (Cost 0.0) ---
+	"groq":      {Cost: 0.0, Latency: 0.2, Quality: 0.85},
+	"cerebras":  {Cost: 0.0, Latency: 0.1, Quality: 0.85},
+	"nvidia":    {Cost: 0.0, Latency: 0.3, Quality: 0.90}, // NIM free credits
+	"xai":       {Cost: 0.0, Latency: 0.4, Quality: 0.85},
+	"together":  {Cost: 0.0, Latency: 0.3, Quality: 0.85},
+
+	// --- LOW COST TIER (Cost 10.0) ---
+	"deepseek":  {Cost: 10.0, Latency: 0.5, Quality: 0.90},
+	"mistral":   {Cost: 10.0, Latency: 0.5, Quality: 0.85},
+	"gemini":    {Cost: 10.0, Latency: 0.6, Quality: 0.95},
+
+	// --- PAID TIER (Cost 20.0) ---
+	"openai":    {Cost: 20.0, Latency: 0.3, Quality: 0.98},
+	"anthropic": {Cost: 20.0, Latency: 0.4, Quality: 0.98},
 }
 
 // multipliers tracks the Lagrange multipliers (λ) for each provider
@@ -63,12 +73,14 @@ func CalculateOptimalRoutes(complexity float64, availableProviders []string) []R
 
 	multipliers.RLock()
 	defer multipliers.RUnlock()
+	
+	realLatencies := db.GetLatencies()
 
 	for _, pid := range availableProviders {
 		stats, ok := providerStats[pid]
 		if !ok {
-			// For the 158 unknown generic API key providers, assume standard flagship quality
-			stats = ModelStats{Cost: 0.5, Latency: 0.5, Quality: 0.85}
+			// For unknown providers, assume they are Low Cost by default so they don't unexpectedly drain Paid credits, but don't blindly trust them as Free
+			stats = ModelStats{Cost: 10.0, Latency: 0.5, Quality: 0.85}
 		}
 
 		// Quality Constraint Check: If quality is significantly lower than complexity, heavily penalize.
@@ -79,10 +91,20 @@ func CalculateOptimalRoutes(complexity float64, availableProviders []string) []R
 
 		// Lambda multiplier for dynamic rate-limits
 		lambda := multipliers.m[pid]
+		
+		// Use dynamic latency if available (normalized roughly by max expected 5000ms)
+		actualLatency := stats.Latency
+		if realLatM, ok := realLatencies[pid]; ok && realLatM > 0 {
+			normalized := float64(realLatM) / 5000.0
+			if normalized > 1.0 {
+				normalized = 1.0
+			}
+			actualLatency = normalized
+		}
 
 		// Objective Function: L(x, lambda)
 		// We want to minimize cost and latency, but penalize missing the quality constraint and past failures.
-		objective := stats.Cost + stats.Latency + qualityPenalty + lambda
+		objective := stats.Cost + actualLatency + qualityPenalty + lambda
 
 		scores = append(scores, RouteScore{
 			ProviderID: pid,

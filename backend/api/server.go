@@ -17,6 +17,8 @@ func NewServer(frontendFS embed.FS) *http.ServeMux {
 mux.HandleFunc("/v1/chat/completions", handlers.HandleChatCompletions)
 mux.HandleFunc("/v1/messages", handlers.HandleAnthropicMessages)
 mux.HandleFunc("/messages", handlers.HandleAnthropicMessages)
+mux.HandleFunc("/v1/chats", handlers.HandleChats)
+mux.HandleFunc("/v1/chats/messages", handlers.HandleChatMessages)
 mux.HandleFunc("/v1/models", handlers.HandleModels)
 mux.HandleFunc("/v1/keys", handlers.HandleKeys)
 mux.HandleFunc("/v1/usage", handlers.HandleUsage)

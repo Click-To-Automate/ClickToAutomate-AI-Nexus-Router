@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -100,8 +101,15 @@ type SmartRoute struct {
 	ActualModel string
 }
 
-// GetSmartRoutes builds an ordered fallback chain of available providers based on mathematical complexity
-func GetSmartRoutes(complexity float64) ([]SmartRoute, error) {
+type IntentProfile struct {
+	Complexity float64
+	IsCoding   bool
+	IsReasoning bool
+	HasImage   bool
+}
+
+// GetSmartRoutes builds an ordered fallback chain of available providers based on mathematical complexity and intent
+func GetSmartRoutes(profile IntentProfile) ([]SmartRoute, error) {
 	var availableProviders []string
 	var activeConfigs []config.ProviderDef
 
@@ -121,39 +129,83 @@ func GetSmartRoutes(complexity float64) ([]SmartRoute, error) {
 		return nil, fmt.Errorf("no API keys configured to fulfill cta-ai-nexus auto-route")
 	}
 
-	// 2. Run Lagrangian Dual Decomposition to find the mathematical optimal order
-	optimalScores := CalculateOptimalRoutes(complexity, availableProviders)
-
 	var routes []SmartRoute
 
-	// 3. Map scores back to actual models
+	// 2. Check if user has defined a custom preferred models priority
+	preferredModelsJSON := db.GetSetting("preferred_models", "[]")
+	var preferredProviders []string
+	if err := json.Unmarshal([]byte(preferredModelsJSON), &preferredProviders); err == nil && len(preferredProviders) > 0 {
+		// Strict priority routing
+		for _, prefItem := range preferredProviders {
+			parts := strings.SplitN(prefItem, "::", 2)
+			if len(parts) != 2 {
+				// Fallback logic for old configs that only had provider IDs
+				prefID := parts[0]
+				for _, p := range activeConfigs {
+					if p.ID == prefID {
+						bestModel := discovery.GetOptimalModel(p.ID, profile.Complexity, profile.IsCoding, profile.IsReasoning, profile.HasImage)
+						key := db.GetKey(p.ID)
+						if key == "" && p.EnvKey != "" {
+							key = os.Getenv(p.EnvKey)
+						}
+						routes = append(routes, SmartRoute{
+							Provider: ResolvedProvider{
+								Name:     p.ID,
+								BaseURL:  p.BaseURL,
+								APIKey:   key,
+								AuthType: p.AuthType,
+							},
+							ActualModel: bestModel,
+						})
+						break
+					}
+				}
+				continue
+			}
+
+			prefID := parts[0]
+			prefModel := parts[1]
+
+			// Find the provider config
+			for _, p := range activeConfigs {
+				if p.ID == prefID {
+					key := db.GetKey(p.ID)
+					if key == "" && p.EnvKey != "" {
+						key = os.Getenv(p.EnvKey)
+					}
+					routes = append(routes, SmartRoute{
+						Provider: ResolvedProvider{
+							Name:     p.ID,
+							BaseURL:  p.BaseURL,
+							APIKey:   key,
+							AuthType: p.AuthType,
+						},
+						ActualModel: prefModel, // Use the explicit model specified by the user!
+					})
+					break
+				}
+			}
+		}
+		
+		if len(routes) > 0 {
+			return routes, nil
+		}
+	}
+
+	// 3. Fallback: Run Lagrangian Dual Decomposition to find the mathematical optimal order
+	optimalScores := CalculateOptimalRoutes(profile.Complexity, availableProviders)
+
+	// 4. Map scores back to actual models
 	for _, score := range optimalScores {
 		for _, p := range activeConfigs {
 			if p.ID == score.ProviderID {
-				// Based on complexity, pick the target tier
-				keyword := ""
-				fallback := ""
-				if complexity >= 0.8 {
-					if p.ID == "groq" { keyword = "70b"; fallback = "llama3-70b-8192" 
-					} else if p.ID == "anthropic" { keyword = "sonnet"; fallback = "claude-3-5-sonnet-20240620" 
-					} else if p.ID == "gemini" { keyword = "pro"; fallback = "gemini-1.5-pro" 
-					} else if p.ID == "mistral" { keyword = "large"; fallback = "mistral-large-latest" 
-					} else if p.ID == "openai" { keyword = "4o"; fallback = "gpt-4o" 
-					} else { keyword = "pro" } // Generic matching for 158 providers
-				} else {
-					if p.ID == "groq" { keyword = "8b"; fallback = "llama3-8b-8192" 
-					} else if p.ID == "cerebras" { keyword = "8b"; fallback = "llama3.1-8b" 
-					} else if p.ID == "gemini" { keyword = "flash"; fallback = "gemini-1.5-flash" 
-					} else if p.ID == "openai" { keyword = "mini"; fallback = "gpt-4o-mini" 
-					} else { keyword = "mini" } // Generic matching for 158 providers
-				}
+				bestModel := discovery.GetOptimalModel(p.ID, profile.Complexity, profile.IsCoding, profile.IsReasoning, profile.HasImage)
 
 				key := db.GetKey(p.ID)
 				if key == "" && p.EnvKey != "" {
 					key = os.Getenv(p.EnvKey)
 				}
 
-				bestModel := discovery.GetBestModel(p.ID, keyword, fallback)
 				routes = append(routes, SmartRoute{
 					Provider: ResolvedProvider{
 						Name:     p.ID,

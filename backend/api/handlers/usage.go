@@ -27,8 +27,19 @@ func HandleUsage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	usage := db.GetAllUsage()
+	latencies := db.GetLatencies()
 	
-	if err := json.NewEncoder(w).Encode(usage); err != nil {
+	type UsageResponse struct {
+		Usage     map[string]db.UsageData `json:"usage"`
+		Latencies map[string]int          `json:"latencies"`
+	}
+	
+	resp := UsageResponse{
+		Usage:     usage,
+		Latencies: latencies,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		http.Error(w, "Failed to encode usage", http.StatusInternalServerError)
 		return
 	}

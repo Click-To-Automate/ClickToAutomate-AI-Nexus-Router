@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"ainexusrouter-core/db"
 	"ainexusrouter-core/providers"
@@ -18,6 +19,7 @@ import (
 
 // HandleProxyRequest proxies the request to the upstream provider
 func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, model string, stream bool) error {
+	aiProfile := db.GetSetting("ai_profile", "balanced")
 	var routes []providers.SmartRoute
 
 	// We unmarshal early to allow intent analysis and global sanitization
@@ -35,11 +37,12 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 	if model == "cta-ai-nexus" {
 		// 1. Extract messages array
 		if messages, ok := payload["messages"].([]interface{}); ok {
-			// 2. Classify complexity mathematically
-			complexity := AnalyzeComplexity(messages)
-			log.Printf("[Auto-Router] Intent Analyzer classified task complexity as: %f\n", complexity)
+			// 2. Classify intent mathematically
+			intentProfile := AnalyzeIntent(messages)
+			intentProfile.HasImage = hasImage
+			log.Printf("[Auto-Router] Intent Analyzer classified task complexity as: %f (Code: %v, Reason: %v, Image: %v)\n", intentProfile.Complexity, intentProfile.IsCoding, intentProfile.IsReasoning, intentProfile.HasImage)
 
-			smartRoutes, err := providers.GetSmartRoutes(complexity)
+			smartRoutes, err := providers.GetSmartRoutes(intentProfile)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return err
@@ -114,7 +117,7 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 								// --- PHASE 1: TOON EXTRACTION PIPELINE ---
 								// If it's a massive JSON block, we attempt TOON extraction regardless of provider
 								// Skip TOON extraction if we already have images in the message
-								if !hasImage && chunk.IsJSON && len(chunk.Text) > 2000 {
+								if aiProfile != "fast" && !hasImage && chunk.IsJSON && len(chunk.Text) > 2000 {
 									log.Printf("[TOON-Compressor] Detected massive JSON payload (%d chars). Attempting TOON extraction via Groq...", len(chunk.Text))
 									toonText, err := CompressToToon(chunk.Text)
 									if err == nil {
@@ -135,7 +138,7 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 									visionCost := EstimateVisionCost(len(chunk.Text))
 									
 									// If fidelity is NOT required, string is decently large, and vision is mathematically cheaper
-									if isVisionProvider && !chunk.FidelityRequired && len(chunk.Text) > 2000 && visionCost < textCost {
+									if aiProfile == "max" && isVisionProvider && !chunk.FidelityRequired && len(chunk.Text) > 2000 && visionCost < textCost {
 										log.Printf("[Context-Compressor] Cost Win! Text: %d tk vs Vision: %d tk -> Compressing chunk...", textCost, visionCost)
 										pages, err := CompressTextToImage(chunk.Text)
 										if err == nil {
@@ -171,29 +174,8 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 				}
 			}
 			
-            // Ensure vision-capable providers use appropriate models when images are present
-				if hasImage {
-					// Override the model with a vision-capable one if the provider supports it
-					switch route.Provider.Name {
-					case "openai":
-						payload["model"] = "gpt-4o" // Vision-capable model
-					case "anthropic":
-						payload["model"] = "claude-3-5-sonnet-20240620" // Vision-capable model
-					case "mistral":
-						payload["model"] = "pixtral-12b-2409" // Vision-capable model
-					case "groq":
-						// Skip Groq if we have images, as it doesn't support vision
-						lastErr = fmt.Errorf("provider groq does not support image inputs")
-						continue
-					default:
-						// Fallback to a default vision-capable model if the provider supports it
-						if strings.Contains(route.ActualModel, "gpt") {
-							payload["model"] = "gpt-4o"
-						} else if strings.Contains(route.ActualModel, "claude") {
-							payload["model"] = "claude-3-5-sonnet-20240620"
-						}
-					}
-				}
+			// Ensure payload model is correctly populated (especially for context compression)
+			payload["model"] = route.ActualModel
 
 		var finalBody []byte
 		var targetURL string
@@ -315,40 +297,36 @@ func HandleProxyRequest(w http.ResponseWriter, r *http.Request, body []byte, mod
 		}
 
 		client := &http.Client{}
+		start := time.Now()
 		resp, err := client.Do(req)
+		latencyMs := int(time.Since(start).Milliseconds())
+
 		if err != nil {
 			log.Printf("[Auto-Router] Network Error on %s: %v\n", route.Provider.Name, err)
 			lastErr = err
 			continue
 		}
+		
+		// If it's a successful response, record the latency
+		if resp.StatusCode == http.StatusOK {
+			go db.UpdateLatency(route.Provider.Name, latencyMs)
+		}
 
 		// Check for rate limits or server errors
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
-
-		bodyStr := strings.ToLower(string(bodyBytes))
 		
-		isDeadModel := resp.StatusCode == http.StatusBadRequest && 
-			(strings.Contains(bodyStr, "decommissioned") ||
-			 strings.Contains(bodyStr, "deprecated") ||
-			 strings.Contains(bodyStr, "not found") ||
-			 strings.Contains(bodyStr, "does not exist"))
-
-		isTokenLimit := resp.StatusCode == http.StatusBadRequest &&
-			(strings.Contains(bodyStr, "rate_limit_exceeded") ||
-			 strings.Contains(bodyStr, "too large") ||
-			 strings.Contains(bodyStr, "limit exceeded") ||
-			 strings.Contains(bodyStr, "maximum context length"))
-
-		if resp.StatusCode == http.StatusTooManyRequests || 
-		   resp.StatusCode == http.StatusRequestEntityTooLarge || 
-		   resp.StatusCode >= 500 || 
-		   isDeadModel || 
-		   isTokenLimit {
+		if resp.StatusCode >= 400 {
 			log.Printf("[Auto-Router] Fallback Triggered! %s returned %d: %s\n", route.Provider.Name, resp.StatusCode, string(bodyBytes))
 			
 			// Add heavy Lagrangian Penalty to force decomposition away from this provider
 			providers.IncrementPenalty(route.Provider.Name)
+
+			fallbackName := "None"
+			if i+1 < len(routes) {
+				fallbackName = routes[i+1].Provider.Name
+			}
+			go TriggerDesktopNotification(route.Provider.Name, fallbackName, resp.StatusCode)
 
 			lastErr = fmt.Errorf("provider %s returned %d", route.Provider.Name, resp.StatusCode)
 			continue // Try next provider!

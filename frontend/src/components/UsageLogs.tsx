@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { API_BASE } from '../api';
+import { Analytics } from './Analytics';
 
 type UsageMap = {
   [providerId: string]: { count: number; tokens_saved: number; tokens_used: number };
@@ -25,7 +26,7 @@ export function UsageLogs() {
   const [usage, setUsage] = useState<UsageMap>({});
   const [savedKeys, setSavedKeys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'charts'>('grid');
 
   const fetchData = async () => {
     try {
@@ -82,6 +83,7 @@ export function UsageLogs() {
         <div className="view-toggle">
           <button className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}>Grid</button>
           <button className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}>List</button>
+          <button className={`view-toggle-btn ${viewMode === 'charts' ? 'active' : ''}`} onClick={() => setViewMode('charts')}>Charts</button>
         </div>
       </div>
 
@@ -118,6 +120,10 @@ export function UsageLogs() {
         <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem', background: 'var(--bg-primary)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
           No keys configured and no requests routed yet.
         </div>
+      ) : viewMode === 'charts' ? (
+        <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
+          <Analytics />
+        </div>
       ) : (
         <div className={viewMode === 'grid' ? 'provider-grid' : 'provider-list'}>
           {activeProvidersList.map(({ id: providerId, count, saved, used }) => {
@@ -152,16 +158,12 @@ export function UsageLogs() {
                     <p className="provider-card-subtitle" style={{ color: 'var(--text-primary)' }}>
                       <strong style={{ fontSize: isGrid ? '1.75rem' : '1.25rem', color: 'var(--text-primary)' }}>{count}</strong> requests
                     </p>
-                    {used > 0 && (
-                      <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                        {used.toLocaleString()} tokens used
-                      </p>
-                    )}
-                    {saved > 0 && (
-                      <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 600 }}>
-                        {saved.toLocaleString()} tokens saved
-                      </p>
-                    )}
+                    <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                      {used.toLocaleString()} tokens used
+                    </p>
+                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--accent)', fontWeight: 600 }}>
+                      {saved.toLocaleString()} tokens saved
+                    </p>
                     
                     {isGrid && (
                       <div style={{ width: '100%', height: '6px', background: 'var(--bg-tertiary)', borderRadius: '3px', overflow: 'hidden', marginTop: '1rem' }}>

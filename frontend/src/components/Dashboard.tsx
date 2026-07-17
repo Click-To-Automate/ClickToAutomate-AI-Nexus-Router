@@ -5,6 +5,7 @@ import { Compression } from './Compression';
 import { CacheViewer } from './CacheViewer';
 import { MCP } from './MCP';
 import { Settings } from './Settings';
+import { AIRouting } from './AIRouting';
 import Logs from './Logs';
 import { UsageLogs } from './UsageLogs';
 
@@ -117,6 +118,17 @@ export function Dashboard() {
             </svg>
             <span className="nav-text">System</span>
           </div>
+
+          <div 
+            className={`nav-item ${activeTab === 'ai-routing' ? 'active' : ''}`}
+            onClick={() => setActiveTab('ai-routing')}
+          >
+            <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              <path d="M18 10h4l-4-4v8z"></path>
+            </svg>
+            <span className="nav-text">AI Routing</span>
+          </div>
         </div>
 
         <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
@@ -147,6 +159,7 @@ export function Dashboard() {
         {activeTab === 'usage' && <UsageLogs />}
         {activeTab === 'mcp' && <MCP />}
         {activeTab === 'settings' && <Settings />}
+        {activeTab === 'ai-routing' && <AIRouting />}
       </div>
     </div>
   );
